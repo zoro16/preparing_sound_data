@@ -4,7 +4,7 @@ from preprocess_audio_utils import *
 
 # filename = "AirportJetRumbles.L.wav"
 
-save_at = "../preprocessed_data"
+save_at = "../../preprocessed_data"
 main_dir = "original_data"
 for dirs in os.listdir(main_dir):
     try:
