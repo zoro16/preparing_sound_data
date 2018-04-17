@@ -4,17 +4,27 @@ import os
 from pydub import AudioSegment
 
 
+def audio_to_chunks(filename, save_at):
+    audio = preprocess_audio(filename)
+    name = filename[:-4]
+    # split sound in 10-second slices and export
+    for i, chunk in enumerate(audio[::10000]):
+        with open("{}/{}_{:04d}.wav".format(save_at, name, i), "wb") as f:
+            chunk.export(f, format="wav")
+
 # Preprocess the audio to the correct format
-def preprocess_audio(filename, start, end, iter=1):
+def preprocess_audio(filename):
     # Trim or pad audio segment to 10000ms
     # padding = AudioSegment.silent(duration=10000)
-    segment = AudioSegment.from_wav(filename)[start:end]
+    segment = AudioSegment.from_wav(filename)
     # segment = padding.overlay(segment)
+
+    segment = segment.set_sample_width(2)
     # Set frame rate to 16000
     segment = segment.set_frame_rate(16000)
-    # Export as wav
-    segment.export("{}_{:04d}".format(filename, iter), format='wav')
+    # segment = segment.set_channels(1)
 
+    return segment
 
 # Calculate and plot spectrogram for a wav audio file
 def graph_spectrogram(wav_file):
@@ -24,13 +34,10 @@ def graph_spectrogram(wav_file):
     noverlap = 120 # Overlap between windows
     nchannels = data.ndim
     if nchannels == 1:
-        pxx, freqs, bins, im = plt.specgram(data, nfft, fs, noverlap = noverlap)
+        pxx, freqs, bins, im = plt.specgram(data, nfft, fs, noverlap=noverlap)
     elif nchannels == 2:
-        pxx, freqs, bins, im = plt.specgram(data[:,0], nfft, fs, noverlap = noverlap)
-    # print("freqs: =>", freqs)
-    # print("bins: =>", bins)
-    # print("im: =>", im)
-    # print("pxx: =>", pxx)
+        pxx, freqs, bins, im = plt.specgram(data[:,0], nfft, fs, noverlap=noverlap)
+
     save_spectrogram_as_png(plt, wav_file)
     return pxx
 
