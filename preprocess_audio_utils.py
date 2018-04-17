@@ -4,12 +4,14 @@ import os
 from pydub import AudioSegment
 
 
-def audio_to_chunks(filename, save_at):
-    audio = preprocess_audio(filename)
-    name = filename[:-4]
+def audio_to_chunks(path, save_as):
+    audio = preprocess_audio(path)
+
+    head, tail = os.path.split(path)
+    name = tail[:-4]
     # split sound in 10-second slices and export
     for i, chunk in enumerate(audio[::10000]):
-        with open("{}/{}_{:04d}.wav".format(save_at, name, i), "wb") as f:
+        with open("{}/{}_{:04d}.wav".format(save_as, name, i), "wb") as f:
             chunk.export(f, format="wav")
 
 # Preprocess the audio to the correct format
