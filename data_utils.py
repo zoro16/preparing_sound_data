@@ -65,7 +65,7 @@ def save_spectrogram_as_jpg(plt, wav_filename):
                 bbox_inches='tight',
                 pad_inches=0)
 
-    convert_to_jpg(png_filename)
+    # convert_to_jpg(png_filename)
 
 def convert_to_jpg(filename):
     im = Image.open(filename)
