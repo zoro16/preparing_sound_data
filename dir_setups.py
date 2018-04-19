@@ -129,6 +129,7 @@ def map_classes_to_files():
 
 # print(map_classes_to_files())
 
+####################################################################
 
 def create_folder(directory):
     if not os.path.exists(directory):
@@ -141,7 +142,20 @@ def create_dirs_for_preprocessed_data():
             create_folder(path)
 
 #create_dirs_for_preprocessed_data()
+####################################################################
+processed_civil_data = []
+def get_list_of_processed_files(category):
+    path = "/mountdir/data/{}/preprocessed_data".format(category)
+    os.chdir(path)
+    for filename in os.listdir(os.getcwd()):
+        if filename.endswith(".wav"):
+            processed_civil_data.append(filename)
+    
+get_list_of_processed_files("civilization")
+# get_list_of_processed_files("industrial")
+print(len(processed_civil_data))
 
+####################################################################
 
 def map_processed_files_to_classes():
     data = json.load(open('data.json'))
@@ -157,6 +171,6 @@ def map_processed_files_to_classes():
 
 
 
-map_processed_files_to_classes()
+# map_processed_files_to_classes()
 
-
+####################################################################
