@@ -30,6 +30,7 @@ def preprocess_audio(filename):
     segment = segment.set_frame_rate(16000)
     # segment = segment.set_channels(1)
 
+    # segment.export(filename, format='wav')
     return segment
 
 # Calculate and plot spectrogram for a wav audio file
@@ -47,25 +48,28 @@ def graph_spectrogram(wav_file):
     return pxx
 
 def wav_to_jpg(filename):
+    # preprocess_audio(filename)
     rate, data = get_wav_info(filename)
     nfft = 256 # Length of each window segment
     fs = 256 # Sampling frequencies
-    nchannels = data.ndim
     pxx, freqs, bins, im = plt.specgram(data, nfft, fs)
     plt.axis('off')
     save_spectrogram_as_jpg(plt, filename)    
+
+# Load a wav file
+def get_wav_info(wav_file):
+    rate, data = wavfile.read(wav_file)
+    return rate, data
 
 def save_spectrogram_as_jpg(plt, wav_filename):
     _, tail = os.path.split(wav_filename)
     png_filename = "{}.png".format(tail[:-4])
     plt.savefig(png_filename,
-                dpi=100,  # Dots per inch
                 frameon='false',
-                aspect='normal',
                 bbox_inches='tight',
                 pad_inches=0)
 
-    # convert_to_jpg(png_filename)
+    convert_to_jpg(png_filename)
 
 def convert_to_jpg(filename):
     im = Image.open(filename)
@@ -73,11 +77,6 @@ def convert_to_jpg(filename):
     rgb_im.save("{}.jpg".format(filename[:-4]))
     if os.path.exists(filename):
         os.remove(filename)
-
-# Load a wav file
-def get_wav_info(wav_file):
-    rate, data = wavfile.read(wav_file)
-    return rate, data
 
 # Used to standardize volume of audio clip
 def match_target_amplitude(sound, target_dBFS):
