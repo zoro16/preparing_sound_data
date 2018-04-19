@@ -79,20 +79,55 @@ industrial = ["Assembly,Plant",
               "Furnace",
               "Industrial_Sound_Effects",
               "Mill,Modern",
-              "Production,Hall"
+              "Production,Hall",
               "Saw,Mill",
               "Steelworks"]
 civilization.sort()
 industrial.sort()
 
 categories = {"civilization": civilization,
-              "industrial": industrial}
+              "industrial": industrial
+}
+
+def files_to_classes(klass, filename):
+    return {klass: filename.split('.')[0]}
+
+def remove_duplication(input_list):
+    seen = set()
+    new_l = []
+    for d in input_list:
+        t = tuple(d.items())
+        if t not in seen:
+            seen.add(t)
+            new_l.append(d)
+            
+    return new_l
+
+civilization_ready_data = []
+industrial_ready_data = []
 
 for key, category in categories.items():
-    print("===================={}=======================".format(key))
+    # print("===================={}=======================".format(key))
     for klass in category:
-        for filename in os.lisdir(klass):
-            path = "{}/{}/{}".format(key, klass, filename)
-            print(path)
-        
+        path = "/mountdir/data/{}/original_data/{}".format(key, klass)
+        os.chdir(path)
+        for filename in os.listdir(os.getcwd()):
+            path = "/mountdir/data/{}/original_data/{}/{}".format(key, klass, filename)
+            if key == "industrial":
+                industrial_ready_data.append(files_to_classes(klass, filename))
+            elif key == "civilization":
+                civilization_ready_data.append(files_to_classes(klass, filename))
+            # print(path)
+            
+# print(len(civilization_ready_data))
+# print(len(remove_duplication(civilization_ready_data)))
 
+# print(len(industrial_ready_data))
+# print(len(remove_duplication(industrial_ready_data)))
+
+
+ready_data = {"civilization": remove_duplication(civilization_ready_data),
+              "industrial": remove_duplication(industrial_ready_data)
+}
+
+print(ready_data)
