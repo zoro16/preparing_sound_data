@@ -1,4 +1,7 @@
 import os
+import json
+from pprint import pprint
+from shutil import copyfile
 
 
 civilization = ["Airport,Ambience",
@@ -84,13 +87,12 @@ industrial = ["Assembly,Plant",
               "Steelworks"]
 civilization.sort()
 industrial.sort()
-
 categories = {"civilization": civilization,
               "industrial": industrial
 }
 
 def files_to_classes(klass, filename):
-    return {klass: filename.split('.')[0]}
+    return {klass: filename.split(".")[0]}
 
 def remove_duplication(input_list):
     seen = set()
@@ -103,31 +105,58 @@ def remove_duplication(input_list):
             
     return new_l
 
-civilization_ready_data = []
-industrial_ready_data = []
+def map_classes_to_files():
+    civilization_ready_data = []
+    industrial_ready_data = []
 
-for key, category in categories.items():
-    # print("===================={}=======================".format(key))
-    for klass in category:
-        path = "/mountdir/data/{}/original_data/{}".format(key, klass)
-        os.chdir(path)
-        for filename in os.listdir(os.getcwd()):
-            path = "/mountdir/data/{}/original_data/{}/{}".format(key, klass, filename)
-            if key == "industrial":
-                industrial_ready_data.append(files_to_classes(klass, filename))
-            elif key == "civilization":
-                civilization_ready_data.append(files_to_classes(klass, filename))
-            # print(path)
-            
-# print(len(civilization_ready_data))
-# print(len(remove_duplication(civilization_ready_data)))
+    for key, category in categories.items():
+        # print("===================={}=======================".format(key))
+        for klass in category:
+            path = "/mountdir/data/{}/original_data/{}".format(key, klass)
+            os.chdir(path)
+            for filename in os.listdir(os.getcwd()):
+                path = "/mountdir/data/{}/original_data/{}/{}".format(key, klass, filename)
+                if key == "industrial":
+                    industrial_ready_data.append(files_to_classes(klass, filename))
+                elif key == "civilization":
+                    civilization_ready_data.append(files_to_classes(klass, filename))
 
-# print(len(industrial_ready_data))
-# print(len(remove_duplication(industrial_ready_data)))
+    ready_data = {"civilization": civilization_ready_data,
+                  "industrial": industrial_ready_data
+    }
+
+    return json.dumps(ready_data, ensure_ascii=False)
+
+# print(map_classes_to_files())
 
 
-ready_data = {"civilization": remove_duplication(civilization_ready_data),
-              "industrial": remove_duplication(industrial_ready_data)
-}
+def create_folder(directory):
+    if not os.path.exists(directory):
+        os.makedirs(directory)
 
-print(ready_data)
+def create_dirs_for_preprocessed_data():
+    for key, category in categories.items():
+        for klass in category:
+            path = "/mountdir/data/{}/preprocessed_data/{}".format(key, klass)
+            create_folder(path)
+
+#create_dirs_for_preprocessed_data()
+
+
+def map_processed_files_to_classes():
+    data = json.load(open('data.json'))
+    for key, classes_list in data.items():
+        for file_maps in classes_list:
+            for klass, filename in file_maps.items():
+                if key == 'civilization':
+                    src = "/mountdir/data/{}/preprocessed_data/{}".format(key, filename)
+                    dst = "/mountdir/data/{}/preprocessed_data/{}/{}".format(key, klass, filename)
+                    # copyfile(src, dst)
+                    print(src)
+                    print(dst)
+
+
+
+map_processed_files_to_classes()
+
+
