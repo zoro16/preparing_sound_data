@@ -6,6 +6,7 @@ from PIL import Image
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+from tqdm import tqdm
 
 
 def audio_to_chunks(path, save_as):
@@ -90,19 +91,45 @@ if __name__ == "__main__":
                         help="Set this flag to specfiy the input path")
     parser.add_argument("--output_path",
                         help="Set this flag to specfiy the output path")
-    parser.add_argument("--chunks",
-                        help="Set this flag if you want to make chunks of waves",
+    parser.add_argument("--slice_audio",
+                        help="Set this flag if you want to slice the *.wav file into chuncks of 10sec audio files",
                         action="store_true")
-    parser.add_argument("--spectrogram",
-                        help="Set this flags  to create spectrograms",
-                        action="store_true",
-                        default=True)
+    parser.add_argument("--to_spectrogram",
+                        help="Set this flag  to create spectrograms images from *.wav files",
+                        action="store_true")
+    parser.add_argument("--audio_main_dir",
+                        help="This flag  to specify the main audio files directory path")
     args = parser.parse_args()
     input_path = args.input_path
     output_path = args.output_path
-    if args.chunks:
-        print("start slicing audio files")
-        audio_to_chunks(input_path, output_path)
-        print("Done slicing")
-    if args.spectrogram:
-        wav_to_jpg(input_path)
+    audio_main_dir = args.audio_main_dir
+    if args.slice_audio:
+        if audio_main_dir:
+            for dirs in tqdm(os.listdir(audio_main_dir),
+                             desc='Main Classes',
+                             leave=True):
+                main_path = "{}/{}".format(audio_main_dir, dirs)
+                list_of_files = os.listdir(main_path)
+                for filename in tqdm(list_of_files,
+                                     desc='File: ',
+                                     leave=True):
+                    path = "./{}/{}".format(main_path, filename)
+                    audio_to_chunks(input_path, output_path)
+        else:
+            print("start slicing audio files")
+            audio_to_chunks(input_path, output_path)
+            print("Done slicing")
+    if args.to_spectrogram:
+        if audio_main_dir:
+            for dirs in tqdm(os.listdir(audio_main_dir),
+                             desc='Main Classes',
+                             leave=True):
+                main_path = "{}/{}".format(audio_main_dir, dirs)
+                list_of_files = os.listdir(main_path)
+                for filename in tqdm(list_of_files,
+                                     desc='File: ',
+                                     leave=True):
+                    path = "./{}/{}".format(main_path, filename)
+                    wav_to_jpg(path)
+        else:
+            wav_to_jpg(input_path)
