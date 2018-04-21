@@ -2,7 +2,8 @@ import os
 import json
 from pprint import pprint
 from shutil import copyfile
-
+from ind_list_files import ind_list
+from civil_list_files import civil_list
 
 civilization = ["Airport,Ambience",
                 "Bar,Ambience",
@@ -135,42 +136,44 @@ def create_folder(directory):
     if not os.path.exists(directory):
         os.makedirs(directory)
 
-def create_dirs_for_preprocessed_data():
+def create_dirs_for_preprocessed_data(category):
     for key, category in categories.items():
         for klass in category:
-            path = "/mountdir/data/{}/preprocessed_data/{}".format(key, klass)
+            path = "/mountdir/data/{}/{}/{}".format(key, category, klass)
             create_folder(path)
 
-#create_dirs_for_preprocessed_data()
+#create_dirs_for_preprocessed_data("industrial")
 ####################################################################
-processed_civil_data = []
-def get_list_of_processed_files(category):
-    path = "/mountdir/data/{}/preprocessed_data".format(category)
+audio_data = []
+
+def get_list_of_processed_files(category, folder):
+    path = "/mountdir/data/{}/{}".format(category, folder)
     os.chdir(path)
     for filename in os.listdir(os.getcwd()):
         if filename.endswith(".wav"):
-            processed_civil_data.append(filename)
+            audio_data.append(filename)
     
-get_list_of_processed_files("civilization")
-# get_list_of_processed_files("industrial")
-print(len(processed_civil_data))
+# get_list_of_processed_files("civilization", "civil_audio_data")
+#get_list_of_processed_files("industrial", "industrial_audio_data")
+#print("data = {}".format(audio_data))
 
 ####################################################################
-
-def map_processed_files_to_classes():
+def map_processed_files_to_classes(folder, list_type):
     data = json.load(open('data.json'))
     for key, classes_list in data.items():
         for file_maps in classes_list:
             for klass, filename in file_maps.items():
-                if key == 'civilization':
-                    src = "/mountdir/data/{}/preprocessed_data/{}".format(key, filename)
-                    dst = "/mountdir/data/{}/preprocessed_data/{}/{}".format(key, klass, filename)
-                    # copyfile(src, dst)
-                    print(src)
-                    print(dst)
+                if key == 'industrial':
+                    for index, i in enumerate(list_type):
+                        if i.startswith(filename):
+                            src = "/mountdir/data/{}/{}/{}".format(key, folder, i)
+                            dst = "/mountdir/data/{}/{}/{}/{}".format(key, folder, klass, i)
+                            copyfile(src, dst)
+                            print(src)
+                            print(dst)
+                            list_type.pop(index)
 
-
-
-# map_processed_files_to_classes()
+map_processed_files_to_classes("industrial_audio_data", ind_list)
+# map_processed_files_to_classes("civil_audio_data", civil_list)
 
 ####################################################################

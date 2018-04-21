@@ -34,6 +34,11 @@ def preprocess_audio(filename):
     # segment.export(filename, format='wav')
     return segment
 
+# Load a wav file
+def get_wav_info(wav_file):
+    rate, data = wavfile.read(wav_file)
+    return rate, data
+
 # Calculate and plot spectrogram for a wav audio file
 def graph_spectrogram(wav_file):
     rate, data = get_wav_info(wav_file)
@@ -57,14 +62,9 @@ def wav_to_jpg(filename):
     plt.axis('off')
     save_spectrogram_as_jpg(plt, filename)    
 
-# Load a wav file
-def get_wav_info(wav_file):
-    rate, data = wavfile.read(wav_file)
-    return rate, data
-
 def save_spectrogram_as_jpg(plt, wav_filename):
     _, tail = os.path.split(wav_filename)
-    png_filename = "{}.png".format(tail[:-4])
+    png_filename = "{}.png".format(wav_filename[:-4])
     plt.savefig(png_filename,
                 frameon='false',
                 bbox_inches='tight',
@@ -76,8 +76,8 @@ def convert_to_jpg(filename):
     im = Image.open(filename)
     rgb_im = im.convert('RGB')
     rgb_im.save("{}.jpg".format(filename[:-4]))
-    if os.path.exists(filename):
-        os.remove(filename)
+    # if os.path.exists(filename):
+    #     os.remove(filename)
 
 # Used to standardize volume of audio clip
 def match_target_amplitude(sound, target_dBFS):
