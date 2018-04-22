@@ -122,7 +122,6 @@ def map_classes_to_files(main_path, folder):
     data = json.dumps(full_list, ensure_ascii=False)
     with open('data.json', 'w') as f:
         f.write(data)
-    os.close(f)
 
     return data
 
@@ -140,13 +139,14 @@ def create_list_of_processed_files(main_path, category, folder):
     audio_data = []
     path = "{}/{}/{}".format(main_path, category, folder)
     os.chdir(path)
-    for filename in os.listdir(os.getcwd()):
-        if filename.endswith(".wav"):
-            audio_data.append(filename)
-    filename = "{}_list_files.py".format(category)
+    for klass in os.listdir(os.getcwd()):
+        for filename in os.listdir(klass):
+            if filename.endswith(".wav"):
+                audio_data.append(filename)
+    filename = "{}/{}_list_files.py".format(main_path, category)
+    _ , var = os.path.split(filename)
     with open(filename, 'w') as f:
-        f.write("{} = {}".format(filename[-4], audio_data))
-    os.close(f)
+        f.write("{} = {}".format(var[:-3], audio_data))
 
     return audio_data
 
@@ -186,25 +186,35 @@ if __name__ == "__main__":
         help="This is to set the absolute path to the main directory of our dataset")
     parser.add_argument(
         "--folder",
-        help="This is to set the name of the main folder e.g. `original_data`")
+        help="This is to set the name of the main folder e.g. `original_data`",
+        default="civil_audio_data")
     parser.add_argument(
         "--category",
-        help="Set this to specify the e.g. `industrial` or `civilization`")
+        help="Set this to specify the e.g. `industrial` or `civilization`",
+        default="civilization")
     parser.add_argument(
         "--list_type",
         help="Set this to specfiy the type of the processed audio files")
     parser.add_argument(
         "--classes_to_files",
-        help="Set this flag to map the audio or other files to it's class")
+        action="store_true",
+        help="Set this flag to map the audio or other files to it's class",
+        default=False)
     parser.add_argument(
         "--create_ready_data_dirs",
-        help="Set this to create directories from classes we have for preprocess files")
+        action="store_true",
+        help="Set this to create directories from classes we have for preprocess files",
+        default=False)
     parser.add_argument(
         "--create_ready_files_list",
-        help="Set this to create a list of all the processed files and put them in python file as list ")
+        action="store_true",
+        help="Set this to create a list of all the processed files and put them in python file as list",
+        default=False)
     parser.add_argument(
         "--files_to_classes",
-        help="Set this to map all the processed files into their classes folders")
+        action="store_true",
+        help="Set this to map all the processed files into their classes folders",
+        default=False)
 
     args = parser.parse_args()
     main_path = args.main_path
@@ -221,5 +231,5 @@ if __name__ == "__main__":
     if args.create_ready_files_list:
         create_list_of_processed_files(main_path, category, folder)
 
-    if arg.files_to_classes:        
+    if args.files_to_classes:        
         map_processed_files_to_classes(main_path, folder, list_type)
