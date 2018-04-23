@@ -51,16 +51,15 @@ def graph_spectrogram(wav_file):
 
     return pxx
 
-def wav_to_jpg(filename, output_path):
-    # preprocess_audio(filename)
+def wav_to_jpg(filename):
     rate, data = get_wav_info(filename)
     nfft = 256 # Length of each window segment
     fs = 256 # Sampling frequencies
     pxx, freqs, bins, im = plt.specgram(data, nfft, fs)
     plt.axis('off')
-    save_spectrogram_as_jpg(plt, filename, output_path)
+    save_spectrogram_as_jpg(plt, filename)
 
-def save_spectrogram_as_jpg(plt, wav_filename, output_path):
+def save_spectrogram_as_jpg(plt, wav_filename):
     # mpl.rcParams["savefig.directory"] = os.chdir(output_path)
     png_filename = "{}.png".format(wav_filename[:-4])
     
@@ -95,9 +94,6 @@ if __name__ == "__main__":
         "--audio_main_dir",
         help="This flag to specify the main audio files directory path e.g `/mountdir/data/civilization/`")
     parser.add_argument(
-        "--spectrogram_main_dir",
-        help="This flag to specify the main spectrogram output files directory")
-    parser.add_argument(
         "--slice_audio",
         action="store_true",
         help="Set this flag if you want to slice the *.wav file into chuncks of 10sec audio files")
@@ -110,7 +106,6 @@ if __name__ == "__main__":
     input_path = args.input_path
     output_path = args.output_path
     audio_main_dir = args.audio_main_dir
-    spectrogram_main_dir = args.spectrogram_main_dir
 
     if args.slice_audio:
         if audio_main_dir:
@@ -139,6 +134,6 @@ if __name__ == "__main__":
                                      desc='File: ',
                                      leave=True):
                     path = "{}/{}".format(main_path, filename)
-                    wav_to_jpg(path, spectrogram_main_dir)
+                    wav_to_jpg(path)
         else:
             wav_to_jpg(input_path, spectrogram_main_dir)
