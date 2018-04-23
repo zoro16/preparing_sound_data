@@ -62,14 +62,14 @@ def wav_to_jpg(filename, output_path):
     save_spectrogram_as_jpg(plt, filename, output_path)
 
 def save_spectrogram_as_jpg(plt, wav_filename, output_path):
-    _, tail = os.path.split(wav_filename)
+    mpl.rcParams["savefig.directory"] = os.chdir(output_path)
     png_filename = "{}.png".format(wav_filename[:-4])
-    mpl.rcParams["savefig.directory"] = os.chdir(os.path.dirname(output_path))
+    
     plt.savefig(png_filename,
                 frameon='false',
                 bbox_inches='tight',
                 pad_inches=0)
-    convert_to_jpg(png_filename)
+    # convert_to_jpg(png_filename)
 
 def convert_to_jpg(filename):
     im = Image.open(filename)
@@ -94,7 +94,7 @@ if __name__ == "__main__":
         help="Set this flag to specfiy the output path")
     parser.add_argument(
         "--audio_main_dir",
-        help="This flag to specify the main audio files directory path")
+        help="This flag to specify the main audio files directory path e.g `/mountdir/data/civilization/`")
     parser.add_argument(
         "--spectrogram_main_dir",
         help="This flag to specify the main spectrogram output files directory")
@@ -123,7 +123,7 @@ if __name__ == "__main__":
                 for filename in tqdm(list_of_files,
                                      desc='File: ',
                                      leave=True):
-                    path = "./{}/{}".format(main_path, filename)
+                    path = "{}/{}".format(main_path, filename)
                     audio_to_chunks(input_path, output_path)
         else:
             print("start slicing audio files")
@@ -139,7 +139,7 @@ if __name__ == "__main__":
                 for filename in tqdm(list_of_files,
                                      desc='File: ',
                                      leave=True):
-                    path = "./{}/{}".format(main_path, filename)
+                    path = "{}/{}".format(main_path, filename)
                     wav_to_jpg(path, spectrogram_main_dir)
         else:
             wav_to_jpg(input_path, spectrogram_main_dir)
