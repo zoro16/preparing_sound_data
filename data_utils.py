@@ -6,7 +6,6 @@ from PIL import Image
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-import matplotlib as mpl
 from tqdm import tqdm
 
 
@@ -62,7 +61,7 @@ def wav_to_jpg(filename, output_path):
     save_spectrogram_as_jpg(plt, filename, output_path)
 
 def save_spectrogram_as_jpg(plt, wav_filename, output_path):
-    mpl.rcParams["savefig.directory"] = os.chdir(output_path)
+    # mpl.rcParams["savefig.directory"] = os.chdir(output_path)
     png_filename = "{}.png".format(wav_filename[:-4])
     
     plt.savefig(png_filename,

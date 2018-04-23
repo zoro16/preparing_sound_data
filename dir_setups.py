@@ -130,10 +130,11 @@ def create_folder(directory):
         os.makedirs(directory)
 
 def create_dirs_for_preprocessed_data(main_path, category):
-    for key, category in categories.items():
-        for klass in category:
-            path = "{}/{}/{}/{}".format(main_path, key, category, klass)
-            create_folder(path)
+    for key, c in categories.items():
+        if key == category:
+            for klass in c:
+                path = "{}/{}".format(main_path, klass)
+                create_folder(path)
 
 def create_list_of_processed_files(main_path, category, folder):
     audio_data = []
@@ -179,6 +180,18 @@ def map_processed_files_to_classes(main_path, folder, list_type):
                             print(dst)
                             list_type.pop(index)
 
+def move_files(main_path, dest, file_extension):
+    for folder in os.listdir(main_path):
+        path = os.path.join(main_path, folder)
+        for filename in os.listdir(path):
+            if filename.endswith(file_extension):
+                print(os.path.join(path, filename))
+                print(os.path.join(dest, folder, filename))
+                print()
+                os.rename(os.path.join(path, filename),
+                          os.path.join(dest, folder, filename))
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -195,6 +208,12 @@ if __name__ == "__main__":
     parser.add_argument(
         "--list_type",
         help="Set this to specfiy the type of the processed audio files")
+    parser.add_argument(
+        "--dest",
+        help="Set this to specfiy the file destination to be moved to")
+    parser.add_argument(
+        "--file_extension",
+        help="Set this to specfiy the files extension to be moved")
     parser.add_argument(
         "--classes_to_files",
         action="store_true",
@@ -215,12 +234,19 @@ if __name__ == "__main__":
         action="store_true",
         help="Set this to map all the processed files into their classes folders",
         default=False)
+    parser.add_argument(
+        "--move_files",
+        action="store_true",
+        help="Set this to move files with some extension to another directory",
+        default=False)
 
     args = parser.parse_args()
     main_path = args.main_path
     category = args.category
     folder = args.folder
     list_type = args.list_type
+    dest = args.dest
+    file_extension = args.file_extension
 
     if args.classes_to_files:
         map_classes_to_files(main_path, folder)
@@ -233,3 +259,6 @@ if __name__ == "__main__":
 
     if args.files_to_classes:        
         map_processed_files_to_classes(main_path, folder, list_type)
+
+    if args.move_files:
+        move_files(main_path, dest, file_extension)
