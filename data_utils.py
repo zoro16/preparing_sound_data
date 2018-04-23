@@ -6,6 +6,7 @@ from PIL import Image
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+import matplotlib as mpl
 from tqdm import tqdm
 
 
@@ -25,13 +26,11 @@ def preprocess_audio(filename):
     # padding = AudioSegment.silent(duration=10000)
     segment = AudioSegment.from_wav(filename)
     # segment = padding.overlay(segment)
-
     segment = segment.set_sample_width(2)
-    # Set frame rate to 16000
     segment = segment.set_frame_rate(16000)
     # segment = segment.set_channels(1)
-
     # segment.export(filename, format='wav')
+
     return segment
 
 # Load a wav file
@@ -53,23 +52,23 @@ def graph_spectrogram(wav_file):
 
     return pxx
 
-def wav_to_jpg(filename):
+def wav_to_jpg(filename, output_path):
     # preprocess_audio(filename)
     rate, data = get_wav_info(filename)
     nfft = 256 # Length of each window segment
     fs = 256 # Sampling frequencies
     pxx, freqs, bins, im = plt.specgram(data, nfft, fs)
     plt.axis('off')
-    save_spectrogram_as_jpg(plt, filename)    
+    save_spectrogram_as_jpg(plt, filename, output_path)
 
-def save_spectrogram_as_jpg(plt, wav_filename):
+def save_spectrogram_as_jpg(plt, wav_filename, output_path):
     _, tail = os.path.split(wav_filename)
     png_filename = "{}.png".format(wav_filename[:-4])
+    mpl.rcParams["savefig.directory"] = os.chdir(os.path.dirname(output_path))
     plt.savefig(png_filename,
                 frameon='false',
                 bbox_inches='tight',
                 pad_inches=0)
-
     convert_to_jpg(png_filename)
 
 def convert_to_jpg(filename):
@@ -87,22 +86,33 @@ def match_target_amplitude(sound, target_dBFS):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--input_path",
-                        help="Set this flag to specfiy the input path")
-    parser.add_argument("--output_path",
-                        help="Set this flag to specfiy the output path")
-    parser.add_argument("--slice_audio",
-                        help="Set this flag if you want to slice the *.wav file into chuncks of 10sec audio files",
-                        action="store_true")
-    parser.add_argument("--to_spectrogram",
-                        help="Set this flag  to create spectrograms images from *.wav files",
-                        action="store_true")
-    parser.add_argument("--audio_main_dir",
-                        help="This flag  to specify the main audio files directory path")
+    parser.add_argument(
+        "--input_path",
+        help="Set this flag to specfiy the input path")
+    parser.add_argument(
+        "--output_path",
+        help="Set this flag to specfiy the output path")
+    parser.add_argument(
+        "--audio_main_dir",
+        help="This flag to specify the main audio files directory path")
+    parser.add_argument(
+        "--spectrogram_main_dir",
+        help="This flag to specify the main spectrogram output files directory")
+    parser.add_argument(
+        "--slice_audio",
+        action="store_true",
+        help="Set this flag if you want to slice the *.wav file into chuncks of 10sec audio files")
+    parser.add_argument(
+        "--to_spectrogram",
+        action="store_true",
+        help="Set this flag  to create spectrograms images from *.wav files")
+
     args = parser.parse_args()
     input_path = args.input_path
     output_path = args.output_path
     audio_main_dir = args.audio_main_dir
+    spectrogram_main_dir = args.spectrogram_main_dir
+
     if args.slice_audio:
         if audio_main_dir:
             for dirs in tqdm(os.listdir(audio_main_dir),
@@ -130,6 +140,6 @@ if __name__ == "__main__":
                                      desc='File: ',
                                      leave=True):
                     path = "./{}/{}".format(main_path, filename)
-                    wav_to_jpg(path)
+                    wav_to_jpg(path, spectrogram_main_dir)
         else:
-            wav_to_jpg(input_path)
+            wav_to_jpg(input_path, spectrogram_main_dir)
