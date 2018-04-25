@@ -8,6 +8,7 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 from collections import OrderedDict
+from subprocess import call
 
 
 def audio_to_chunks(path, save_as):
@@ -77,6 +78,15 @@ def convert_to_jpg(filename):
     # if os.path.exists(filename):
     #     os.remove(filename)
 
+# ImageMagic has to be installed
+def png_to_jpg(main_dir):
+    wd = os.getcwd()
+    path = os.path.join(wd, main_dir)
+    for klass in os.listdir(path):
+        c_klass = os.path.join(path, klass)
+        os.chdir(c_klass)
+        call(["mogrify", "-format", "jpg", "*.png"])
+
 # Used to standardize volume of audio clip
 def match_target_amplitude(sound, target_dBFS):
     change_in_dBFS = target_dBFS - sound.dBFS
@@ -92,7 +102,7 @@ if __name__ == "__main__":
         "--output_path",
         help="Set this flag to specfiy the output path")
     parser.add_argument(
-        "--audio_main_dir",
+        "--main_dir",
         help="This flag to specify the main audio files directory path e.g `/mountdir/data/civilization/`")
     parser.add_argument(
         "--slice_audio",
@@ -102,26 +112,19 @@ if __name__ == "__main__":
         "--to_spectrogram",
         action="store_true",
         help="Set this flag  to create spectrograms images from *.wav files")
+    parser.add_argument(
+        "--png2jpg",
+        action="store_true",
+        help="Set this to convert *.png images to *.jpg, you need to install imagmagic in you *inux machine")
+
 
     args = parser.parse_args()
     input_path = args.input_path
     output_path = args.output_path
-    audio_main_dir = args.audio_main_dir
-
-    full_list = {}
-    for klass in os.listdir(audio_main_dir):
-        main_path = "{}/{}".format(audio_main_dir, klass)
-        temp = []
-        for filename in os.listdir(main_path):
-            p = "{}/{}/{}".format(audio_main_dir, klass, filename)
-            temp.append(p)
-        full_list[klass] = temp
-        # full_list[klass].sort()
-
-        full_list = OrderedDict(sorted(full_list.items(), key=lambda t: t[0]))
+    main_dir = args.main_dir
 
     if args.to_spectrogram:
-        if audio_main_dir:
+        if main_dir:
             for key,files_list in full_list.items():
                 files_list.sort()
                 for index, filename in enumerate(files_list):
@@ -136,11 +139,22 @@ if __name__ == "__main__":
             wav_to_jpg(input_path)
         
     if args.slice_audio:
-        if audio_main_dir:
-            for dirs in tqdm(os.listdir(audio_main_dir),
+        if main_dir:
+            full_list = {}
+            for klass in os.listdir(main_dir):
+                main_path = "{}/{}".format(main_dir, klass)
+                temp = []
+                for filename in os.listdir(main_path):
+                    p = "{}/{}/{}".format(main_dir, klass, filename)
+                    temp.append(p)
+                full_list[klass] = temp
+
+            full_list = OrderedDict(sorted(full_list.items(), key=lambda t: t[0]))
+
+            for dirs in tqdm(os.listdir(main_dir),
                              desc='Main Classes',
                              leave=True):
-                main_path = "{}/{}".format(audio_main_dir, dirs)
+                main_path = "{}/{}".format(main_dir, dirs)
                 list_of_files = os.listdir(main_path)
                 for filename in tqdm(list_of_files,
                                      desc='File: ',
@@ -151,3 +165,7 @@ if __name__ == "__main__":
             print("start slicing audio files")
             audio_to_chunks(input_path, output_path)
             print("Done slicing")
+
+    if args.png2jpg:
+        if main_dir:
+            png_to_jpg(main_dir)
