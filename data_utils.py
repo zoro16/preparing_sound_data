@@ -126,12 +126,12 @@ if __name__ == "__main__":
                 files_list.sort()
                 for index, filename in enumerate(files_list):
                     if files_list[index][:-4] == files_list[index-1][:-4]:
-                        print("ALREADY CONVERTED TO PNG")
-                        # pass
+                        # print("ALREADY CONVERTED TO PNG")
+                        continue
                     else:
                         if filename.endswith(".wav"):
-                            wav_to_jpg(filename)
                             print(filename)
+                            wav_to_jpg(filename)
         else:
             wav_to_jpg(input_path)
         
