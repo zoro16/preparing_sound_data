@@ -125,7 +125,18 @@ if __name__ == "__main__":
 
     if args.to_spectrogram:
         if main_dir:
-            for key,files_list in full_list.items():
+            full_list = {}
+            for klass in os.listdir(main_dir):
+                main_path = "{}/{}".format(main_dir, klass)
+                temp = []
+                for filename in os.listdir(main_path):
+                    p = "{}/{}/{}".format(main_dir, klass, filename)
+                    temp.append(p)
+                full_list[klass] = temp
+
+            full_list = OrderedDict(sorted(full_list.items(), key=lambda t: t[0]))
+
+            for key, files_list in full_list.items():
                 files_list.sort()
                 for index, filename in enumerate(files_list):
                     if files_list[index][:-4] == files_list[index-1][:-4]:
@@ -140,17 +151,6 @@ if __name__ == "__main__":
         
     if args.slice_audio:
         if main_dir:
-            full_list = {}
-            for klass in os.listdir(main_dir):
-                main_path = "{}/{}".format(main_dir, klass)
-                temp = []
-                for filename in os.listdir(main_path):
-                    p = "{}/{}/{}".format(main_dir, klass, filename)
-                    temp.append(p)
-                full_list[klass] = temp
-
-            full_list = OrderedDict(sorted(full_list.items(), key=lambda t: t[0]))
-
             for dirs in tqdm(os.listdir(main_dir),
                              desc='Main Classes',
                              leave=True):
