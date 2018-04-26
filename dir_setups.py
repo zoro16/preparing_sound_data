@@ -183,6 +183,8 @@ def map_processed_files_to_classes(main_path, folder, list_type):
 def move_files(main_path, dest, file_extension):
     for folder in os.listdir(main_path):
         path = os.path.join(main_path, folder)
+        if is not os.path.exists(path):
+            os.makedirs(path)
         for filename in os.listdir(path):
             if filename.endswith(file_extension):
                 print(os.path.join(path, filename))
@@ -191,6 +193,17 @@ def move_files(main_path, dest, file_extension):
                 os.rename(os.path.join(path, filename),
                           os.path.join(dest, folder, filename))
 
+def remove_files(main_path, file_extension):
+    for folder in os.listdir(main_path):
+        path = os.path.join(main_path, folder)
+        if os.path.isdir(path):
+            for filename in os.listdir(path):
+                if filename.endswith(file_extension):
+                    print(os.path.join(path, filename))
+                    os.remove(os.path.join(path, filename))
+        else:
+            if path.endswith(file_extension):
+                os.remove(path)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -239,6 +252,11 @@ if __name__ == "__main__":
         action="store_true",
         help="Set this to move files with some extension to another directory",
         default=False)
+    parser.add_argument(
+        "--remove_files",
+        action="store_true",
+        help="Set this to remove all the files with particular extension",
+        default=False)
 
     args = parser.parse_args()
     main_path = args.main_path
@@ -262,3 +280,6 @@ if __name__ == "__main__":
 
     if args.move_files:
         move_files(main_path, dest, file_extension)
+
+    if args.remove_files:
+        remove_files(main_path, file_extension)
