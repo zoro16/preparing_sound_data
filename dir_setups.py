@@ -183,7 +183,7 @@ def map_processed_files_to_classes(main_path, folder, list_type):
 def move_files(main_path, dest, file_extension):
     for folder in os.listdir(main_path):
         path = os.path.join(main_path, folder)
-        if is not os.path.exists(path):
+        if os.path.exists(path) == False:
             os.makedirs(path)
         for filename in os.listdir(path):
             if filename.endswith(file_extension):
