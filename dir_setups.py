@@ -213,11 +213,14 @@ def join_path(p, f):
 
 def create_csv(path):
     csv_list = []
-    # path = full_path(path)
+    abspath = full_path(path)
     for klass in os.listdir(path):
         klass = join_path(path, klass)
         for filename in os.listdir(klass):
             csv_list.append('{}, "{}"'.format(filename, klass))
+    csv_file = "{}/{}_labels.csv".format(abspath, path)
+    with open(csv_file, 'w') as f:
+        f.write(csv_list)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
