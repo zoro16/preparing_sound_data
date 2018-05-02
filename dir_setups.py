@@ -228,8 +228,8 @@ def create_csv(path):
                 for filename in os.listdir(klass):
                     _, k = os.path.split(klass)
                     k = fix_labeling(k)
-                    f.write('{}/{}, "{}"\n'.format(path, filename, k))
-                    print('{}/{}, "{}"'.format(path, filename, k))
+                    f.write('{}, "{}"\n'.format(filename, k))
+                    print('{}, "{}"'.format(filename, k))
     f.close()
 
 if __name__ == "__main__":
