@@ -89,6 +89,19 @@ industrial_classes.sort()
 categories = {"civilization": civilization_classes,
               "industrial": industrial_classes}
 
+def full_path(p):
+    abspath = os.path.abspath(p)
+    return abspath
+
+def join_path(p, f):
+    joined = os.path.join(p, f)
+    return joined
+
+def fix_labeling(label):
+    label = label.replace(",", ", ")
+    label = label.replace("_", " ")
+    return label
+
 def files_to_classes(klass, filename):
     return {klass: filename.split(".")[0]}
 
@@ -203,24 +216,21 @@ def remove_files(main_path, file_extension):
         else:
             if path.endswith(file_extension):
                 os.remove(path)
-def full_path(p):
-    abspath = os.path.abspath(p)
-    return abspath
-
-def join_path(p, f):
-    joined = os.path.join(p, f)
-    return joined
 
 def create_csv(path):
-    csv_list = []
     abspath = full_path(path)
-    for klass in os.listdir(path):
-        klass = join_path(path, klass)
-        for filename in os.listdir(klass):
-            csv_list.append('{}, "{}"'.format(filename, klass))
     csv_file = "{}/{}_labels.csv".format(abspath, path)
-    with open(csv_file, 'w') as f:
-        f.write(csv_list)
+    f = open(csv_file, 'a+')
+    if os.path.isdir(path):
+        for klass in os.listdir(path):
+            klass = join_path(path, klass)
+            if os.path.isdir(klass):
+                for filename in os.listdir(klass):
+                    _, k = os.path.split(klass)
+                    k = fix_labeling(k)
+                    f.write('{}/{}, "{}"\n'.format(path, filename, k))
+                    print('{}/{}, "{}"'.format(path, filename, k))
+    f.close()
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
