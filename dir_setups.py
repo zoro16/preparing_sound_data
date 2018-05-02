@@ -136,13 +136,13 @@ def create_dirs_for_preprocessed_data(main_path, category):
                 path = "{}/{}".format(main_path, klass)
                 create_folder(path)
 
-def create_list_of_processed_files(main_path, category, folder):
+def create_list_of_processed_files(main_path, category, folder, ends):
     audio_data = []
     path = "{}/{}/{}".format(main_path, category, folder)
     os.chdir(path)
     for klass in os.listdir(os.getcwd()):
         for filename in os.listdir(klass):
-            if filename.endswith(".wav"):
+            if filename.endswith(ends):
                 audio_data.append(filename)
     filename = "{}/{}_list_files.py".format(main_path, category)
     _ , var = os.path.split(filename)
@@ -204,10 +204,26 @@ def remove_files(main_path, file_extension):
         else:
             if path.endswith(file_extension):
                 os.remove(path)
+def full_path(p):
+    abspath = os.path.abspath(p)
+    return abspath
+
+def join_path(p, f):
+    joined = os.path.join(p, f)
+    return joined
+
+def create_csv(path):
+    csv_list = []
+    # path = full_path(path)
+    for klass in os.listdir(path):
+        klass = join_path(path, klass)
+        for filename in os.listdir(klass):
+            csv_list.append('{}, "{}"'.format(filename, klass))
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
+        "-p",
         "--main_path",
         help="This is to set the absolute path to the main directory of our dataset")
     parser.add_argument(
@@ -222,40 +238,53 @@ if __name__ == "__main__":
         "--list_type",
         help="Set this to specfiy the type of the processed audio files")
     parser.add_argument(
+        "-d",
         "--dest",
         help="Set this to specfiy the file destination to be moved to")
     parser.add_argument(
+        "-e",
         "--file_extension",
         help="Set this to specfiy the files extension to be moved")
     parser.add_argument(
+        "-c2f",
         "--classes_to_files",
         action="store_true",
         help="Set this flag to map the audio or other files to it's class",
         default=False)
     parser.add_argument(
+        "-dl",
         "--create_ready_data_dirs",
         action="store_true",
         help="Set this to create directories from classes we have for preprocess files",
         default=False)
     parser.add_argument(
+        "-fl",
         "--create_ready_files_list",
         action="store_true",
         help="Set this to create a list of all the processed files and put them in python file as list",
         default=False)
     parser.add_argument(
+        "-f2c",
         "--files_to_classes",
         action="store_true",
         help="Set this to map all the processed files into their classes folders",
         default=False)
     parser.add_argument(
+        "-mv",
         "--move_files",
         action="store_true",
         help="Set this to move files with some extension to another directory",
         default=False)
     parser.add_argument(
+        "-rm",
         "--remove_files",
         action="store_true",
         help="Set this to remove all the files with particular extension",
+        default=False)
+    parser.add_argument(
+        "--csv",
+        action="store_true",
+        help="Set this to generate csv file with list of labeled data",
         default=False)
 
     args = parser.parse_args()
@@ -264,7 +293,7 @@ if __name__ == "__main__":
     folder = args.folder
     list_type = args.list_type
     dest = args.dest
-    file_extension = args.file_extension
+    extension = args.file_extension
 
     if args.classes_to_files:
         map_classes_to_files(main_path, folder)
@@ -273,13 +302,16 @@ if __name__ == "__main__":
         create_dirs_for_preprocessed_data(main_path, category)
     
     if args.create_ready_files_list:
-        create_list_of_processed_files(main_path, category, folder)
+        create_list_of_processed_files(main_path, category, folder, extension)
 
     if args.files_to_classes:        
         map_processed_files_to_classes(main_path, folder, list_type)
 
     if args.move_files:
-        move_files(main_path, dest, file_extension)
+        move_files(main_path, dest, extension)
 
     if args.remove_files:
-        remove_files(main_path, file_extension)
+        remove_files(main_path, extension)
+    
+    if args.csv:
+        create_csv(main_path)
