@@ -183,13 +183,12 @@ def map_processed_files_to_classes(main_path, folder, list_type):
 def move_files(main_path, dest, file_extension):
     for folder in os.listdir(main_path):
         path = os.path.join(main_path, folder)
-        if os.path.exists(path) == False:
-            os.makedirs(path)
         for filename in os.listdir(path):
             if filename.endswith(file_extension):
                 print(os.path.join(path, filename))
                 print(os.path.join(dest, folder, filename))
                 print()
+                create_folder(os.path.join(dest, folder))
                 os.rename(os.path.join(path, filename),
                           os.path.join(dest, folder, filename))
 
