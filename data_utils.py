@@ -39,6 +39,11 @@ def get_wav_info(wav_file):
     rate, data = wavfile.read(wav_file)
     return rate, data
 
+def mp3_to_wav(input_path):
+    output_path = "{}.wav".format(input_path[:-4])
+    sound = AudioSegment.from_mp3(input_path)
+    sound.export(output_path, format="wav")
+
 # Calculate and plot spectrogram for a wav audio file
 def graph_spectrogram(wav_file):
     rate, data = get_wav_info(wav_file)
@@ -98,26 +103,35 @@ def match_target_amplitude(sound, target_dBFS):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
+        "-i",
         "--input_path",
         help="Set this flag to specfiy the input path")
     parser.add_argument(
+        "-o",
         "--output_path",
         help="Set this flag to specfiy the output path")
     parser.add_argument(
+        "-p",
         "--main_dir",
         help="This flag to specify the main audio files directory path e.g `/mountdir/data/civilization/`")
     parser.add_argument(
+        "-s",
         "--slice_audio",
         action="store_true",
         help="Set this flag if you want to slice the *.wav file into chuncks of 10sec audio files")
     parser.add_argument(
+        "-S",
         "--to_spectrogram",
         action="store_true",
         help="Set this flag  to create spectrograms images from *.wav files")
     parser.add_argument(
         "--png2jpg",
         action="store_true",
-        help="Set this to convert *.png images to *.jpg, you need to install imagmagic in you *inux machine")
+        help="Set this to convert *.png images to *.jpg, you need to install imagmagick in you *inux machine")
+    parser.add_argument(
+        "--mp32wav",
+        action="store_true",
+        help="Set this to convert *.mp3 audio files to *.wav, you need to install ffmpeg in you *inux machine")
 
 
     args = parser.parse_args()
@@ -142,7 +156,6 @@ if __name__ == "__main__":
                 files_list.sort()
                 for index, filename in enumerate(files_list):
                     if files_list[index][:-4] == files_list[index-1][:-4]:
-                        # print("ALREADY CONVERTED TO PNG")
                         continue
                     else:
                         if filename.endswith(".wav"):
@@ -162,12 +175,30 @@ if __name__ == "__main__":
                                      desc='File: ',
                                      leave=True):
                     path = "{}/{}".format(main_path, filename)
-                    audio_to_chunks(input_path, output_path)
+                    if path.endswith("mp3"):
+                        mp3_to_wav(path)
+                        audio_to_chunks(input_path, output_path)
+                    if path.endswith("wav"):
+                        audio_to_chunks(input_path, output_path)
         else:
-            print("start slicing audio files")
-            audio_to_chunks(input_path, output_path)
-            print("Done slicing")
+            if path.endswith("mp3"):
+                print("convert from mp3 to wav")
+                mp3_to_wav(input_path)
+                print("start slicing audio files")
+                audio_to_chunks(input_path, output_path)
+                print("Done!")
+            if path.endswith("wav"):
+                print("start slicing audio files")
+                audio_to_chunks(input_path, output_path)
+                print("Done!")
 
     if args.png2jpg:
         if main_dir:
+            print("Start converting from png to jpg")
             png_to_jpg(main_dir)
+            print("Done!")
+
+    if args.mp32wav:
+        print("convert from mp3 to wav")
+        mp3_to_wav(input_path)
+        print("Done!")
