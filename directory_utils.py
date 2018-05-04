@@ -3,6 +3,7 @@ import json
 from shutil import copyfile
 import argparse
 
+
 civilization_classes = ["Airport,Ambience",
                         "Bar,Ambience",
                         "Crowd,Applause",
@@ -96,11 +97,6 @@ def full_path(p):
 def join_path(p, f):
     joined = os.path.join(p, f)
     return joined
-
-def fix_labeling(label):
-    label = label.replace(",", ", ")
-    label = label.replace("_", " ")
-    return label
 
 def files_to_classes(klass, filename):
     return {klass: filename.split(".")[0]}
@@ -216,26 +212,11 @@ def remove_files(main_path, file_extension):
             if path.endswith(file_extension):
                 os.remove(path)
 
-def create_csv(path):
-    abspath = full_path(path)
-    csv_file = "{}/{}_labels.csv".format(abspath, path)
-    f = open(csv_file, 'a+')
-    if os.path.isdir(path):
-        for klass in os.listdir(path):
-            klass = join_path(path, klass)
-            if os.path.isdir(klass):
-                for filename in os.listdir(klass):
-                    _, k = os.path.split(klass)
-                    k = fix_labeling(k)
-                    f.write('{}, "{}"\n'.format(filename, k))
-                    print('{}, "{}"'.format(filename, k))
-    f.close()
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "-p",
-        "--main_path",
+        "--path",
         help="This is to set the absolute path to the main directory of our dataset")
     parser.add_argument(
         "--folder",
@@ -292,14 +273,10 @@ if __name__ == "__main__":
         action="store_true",
         help="Set this to remove all the files with particular extension",
         default=False)
-    parser.add_argument(
-        "--csv",
-        action="store_true",
-        help="Set this to generate csv file with list of labeled data",
-        default=False)
+
 
     args = parser.parse_args()
-    main_path = args.main_path
+    path = args.path
     category = args.category
     folder = args.folder
     list_type = args.list_type
@@ -307,22 +284,19 @@ if __name__ == "__main__":
     extension = args.file_extension
 
     if args.classes_to_files:
-        map_classes_to_files(main_path, folder)
+        map_classes_to_files(path, folder)
 
     if args.create_ready_data_dirs:
-        create_dirs_for_preprocessed_data(main_path, category)
+        create_dirs_for_preprocessed_data(path, category)
 
     if args.create_ready_files_list:
-        create_list_of_processed_files(main_path, category, folder, extension)
+        create_list_of_processed_files(path, category, folder, extension)
 
     if args.files_to_classes:
-        map_processed_files_to_classes(main_path, folder, list_type)
+        map_processed_files_to_classes(path, folder, list_type)
 
     if args.move_files:
-        move_files(main_path, dest, extension)
+        move_files(path, dest, extension)
 
     if args.remove_files:
-        remove_files(main_path, extension)
-
-    if args.csv:
-        create_csv(main_path)
+        remove_files(path, extension)
