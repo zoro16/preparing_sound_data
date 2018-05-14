@@ -9,6 +9,9 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 from collections import OrderedDict
 from subprocess import call
+# from pydub.utils import which
+# AudioSegment.converter = which("ffmpeg")
+
 
 
 def audio_to_chunks(path, save_as):
@@ -16,14 +19,14 @@ def audio_to_chunks(path, save_as):
 
     head, tail = os.path.split(path)
     name = tail[:-4]
-    # split sound in 10-second slices and export
+    # SPLIT SOUND IN 10-SECOND SLICES AND EXPORT
     for i, chunk in enumerate(audio[::10000]):
         with open("{}/{}_{:04d}.wav".format(save_as, name, i), "wb") as f:
             chunk.export(f, format="wav")
 
-# Preprocess the audio to the correct format
+# PREPROCESS THE AUDIO TO THE CORRECT FORMAT
 def preprocess_audio(filename):
-    # Trim or pad audio segment to 10000ms
+    # TRIM OR PAD AUDIO SEGMENT TO 10000MS
     # padding = AudioSegment.silent(duration=10000)
     segment = AudioSegment.from_wav(filename)
     # segment = padding.overlay(segment)
@@ -34,7 +37,7 @@ def preprocess_audio(filename):
 
     return segment
 
-# Load a wav file
+# LOAD A WAV FILE
 def get_wav_info(wav_file):
     rate, data = wavfile.read(wav_file)
     return rate, data
@@ -44,12 +47,12 @@ def mp3_to_wav(input_path):
     sound = AudioSegment.from_mp3(input_path)
     sound.export(output_path, format="wav")
 
-# Calculate and plot spectrogram for a wav audio file
+# CALCULATE AND PLOT SPECTROGRAM FOR A WAV AUDIO FILE
 def graph_spectrogram(wav_file):
     rate, data = get_wav_info(wav_file)
-    nfft = 200 # Length of each window segment
-    fs = 8000 # Sampling frequencies
-    noverlap = 120 # Overlap between windows
+    nfft = 200 # LENGTH OF EACH WINDOW SEGMENT
+    fs = 8000 # SAMPLING FREQUENCIES
+    noverlap = 120 # OVERLAP BETWEEN WINDOWS
     nchannels = data.ndim
     if nchannels == 1:
         pxx, freqs, bins, im = plt.specgram(data, nfft, fs, noverlap=noverlap)
@@ -60,8 +63,8 @@ def graph_spectrogram(wav_file):
 
 def wav_to_jpg(filename):
     rate, data = get_wav_info(filename)
-    nfft = 256 # Length of each window segment
-    fs = 256 # Sampling frequencies
+    nfft = 256 # LENGTH OF EACH WINDOW SEGMENT
+    fs = 256 # SAMPLING FREQUENCIES
     pxx, freqs, bins, im = plt.specgram(data, nfft, fs)
     plt.axis('off')
     save_spectrogram_as_jpg(plt, filename)
@@ -85,7 +88,7 @@ def convert_to_jpg(filename):
     # if os.path.exists(filename):
     #     os.remove(filename)
 
-# ImageMagic has to be installed
+# ImageMagick HAS TO BE INSTALLED
 def png_to_jpg(main_dir):
     wd = os.getcwd()
     path = os.path.join(wd, main_dir)
@@ -94,10 +97,36 @@ def png_to_jpg(main_dir):
         os.chdir(c_klass)
         call(["mogrify", "-format", "jpg", "*.png"])
 
-# Used to standardize volume of audio clip
+# USED TO STANDARDIZE VOLUME OF AUDIO CLIP
 def match_target_amplitude(sound, target_dBFS):
     change_in_dBFS = target_dBFS - sound.dBFS
     return sound.apply_gain(change_in_dBFS)
+
+# CHECK FOR SILENT FILES OR dBFS IS -INF
+def check_for_inf_amplitude(main_dir):
+    wd = os.getcwd()
+    path = os.path.join(wd, main_dir)
+    for klass in os.listdir(path):
+        c_klass = os.path.join(path, klass)
+        os.chdir(c_klass)
+        for filename in os.listdir(c_klass):
+            filename = os.path.join(c_klass, filename)
+            segment = AudioSegment.from_wav(filename)
+            if segment.dBFS == -float("inf"):
+                print(filename)
+
+
+df = pd.read_csv("silent_files.txt", sep="/", header=None, names=["class", "filename"])
+df["filename"] = df["filename"].str.replace(".wav", "")
+df.to_csv("silent_files.tsv", sep="\t", index=None)
+def remove_silent_files(path, ext="wav"):
+    for i, k in zip(df["class"], df["filename"]):
+        full_path = "{}/{}/{}.{}".format(path, i, k, ext)
+        print(full_path)
+        os.remove(full_path)
+
+path = "/models/unbalanced_train_jpg/"
+remove_silent_files(path, "jpg")
 
 
 if __name__ == "__main__":
@@ -132,6 +161,10 @@ if __name__ == "__main__":
         "--mp32wav",
         action="store_true",
         help="Set this to convert *.mp3 audio files to *.wav, you need to install ffmpeg in you *inux machine")
+    parser.add_argument(
+        "--check_inf",
+        action="store_true",
+        help="Set this to check if audio files are silence")
 
 
     args = parser.parse_args()
@@ -202,3 +235,7 @@ if __name__ == "__main__":
         print("convert from mp3 to wav")
         mp3_to_wav(input_path)
         print("Done!")
+
+    if args.check_inf:
+        if main_dir:
+            check_for_inf_amplitude(main_dir)

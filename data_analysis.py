@@ -37,7 +37,7 @@ def create_csv(path, sep=","):
 
 def process_tsv(input_path, output):
     df = pd.read_csv(input_path, sep="\t", names=["X", "Y"])
-    df_sorted = df.sort_values(['X', 'Y'], ascending=True)
+    df_sorted = df.sort_values(['Y'], ascending=True)
     df_sorted.to_csv(output, sep="\t", index=False)
 
 
