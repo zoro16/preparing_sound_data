@@ -116,17 +116,20 @@ def check_for_inf_amplitude(main_dir):
                 print(filename)
 
 
-df = pd.read_csv("silent_files.txt", sep="/", header=None, names=["class", "filename"])
-df["filename"] = df["filename"].str.replace(".wav", "")
-df.to_csv("silent_files.tsv", sep="\t", index=None)
+# df = pd.read_csv("silent_files.txt", sep="/", header=None, names=["class", "filename"])
+# df["filename"] = df["filename"].str.replace(".wav", "")
+# df.to_csv("silent_files.tsv", sep="\t", index=None)
+
 def remove_silent_files(path, ext="wav"):
+    df = pd.read_table("silent_files.tsv")
+
     for i, k in zip(df["class"], df["filename"]):
         full_path = "{}/{}/{}.{}".format(path, i, k, ext)
         print(full_path)
         os.remove(full_path)
 
-path = "/models/unbalanced_train_jpg/"
-remove_silent_files(path, "jpg")
+def remove_silent_records_tsv():
+    pass
 
 
 if __name__ == "__main__":
@@ -165,12 +168,17 @@ if __name__ == "__main__":
         "--check_inf",
         action="store_true",
         help="Set this to check if audio files are silence")
-
+    parser.add_argument(
+        "-e",
+        "--extension",
+        action="store_true",
+        help="Set this to specfiy the file extension that you want to process on.")
 
     args = parser.parse_args()
     input_path = args.input_path
     output_path = args.output_path
     main_dir = args.main_dir
+    ext = args.extension
 
     if args.to_spectrogram:
         if main_dir:
@@ -239,3 +247,7 @@ if __name__ == "__main__":
     if args.check_inf:
         if main_dir:
             check_for_inf_amplitude(main_dir)
+
+    if args.remove_silent:
+        if main_dir:        
+            remove_silent_files(main_dir, ext)
