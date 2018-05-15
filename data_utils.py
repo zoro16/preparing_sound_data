@@ -173,6 +173,11 @@ if __name__ == "__main__":
         "--extension",
         action="store_true",
         help="Set this to specfiy the file extension that you want to process on.")
+    parser.add_argument(
+        "-r",
+        "--remove_silent",
+        action="store_true",
+        help="Set this to specfiy the file extension that you want to process on.")
 
     args = parser.parse_args()
     input_path = args.input_path
