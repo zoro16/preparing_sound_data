@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 from collections import OrderedDict
 from subprocess import call
+import pandas as pd
 # from pydub.utils import which
 # AudioSegment.converter = which("ffmpeg")
 
@@ -115,21 +116,18 @@ def check_for_inf_amplitude(main_dir):
             if segment.dBFS == -float("inf"):
                 print(filename)
 
-
-# df = pd.read_csv("silent_files.txt", sep="/", header=None, names=["class", "filename"])
-# df["filename"] = df["filename"].str.replace(".wav", "")
-# df.to_csv("silent_files.tsv", sep="\t", index=None)
-
 def remove_silent_files(path, ext="wav"):
+    # PRE-STEP
+    # df = pd.read_csv("silent_files.txt", sep="/", header=None, names=["class", "filename"])
+    # df["filename"] = df["filename"].str.replace(".wav", "")
+    # df.to_csv("silent_files.tsv", sep="\t", index=None)
+
     df = pd.read_table("silent_files.tsv")
 
     for i, k in zip(df["class"], df["filename"]):
         full_path = "{}/{}/{}.{}".format(path, i, k, ext)
         print(full_path)
         os.remove(full_path)
-
-def remove_silent_records_tsv():
-    pass
 
 
 if __name__ == "__main__":
@@ -146,6 +144,10 @@ if __name__ == "__main__":
         "-p",
         "--main_dir",
         help="This flag to specify the main audio files directory path e.g `/mountdir/data/civilization/`")
+    parser.add_argument(
+        "-e",
+        "--extension",
+        help="Set this to specfiy the file extension that you want to process on.")
     parser.add_argument(
         "-s",
         "--slice_audio",
@@ -168,11 +170,6 @@ if __name__ == "__main__":
         "--check_inf",
         action="store_true",
         help="Set this to check if audio files are silence")
-    parser.add_argument(
-        "-e",
-        "--extension",
-        action="store_true",
-        help="Set this to specfiy the file extension that you want to process on.")
     parser.add_argument(
         "-r",
         "--remove_silent",
