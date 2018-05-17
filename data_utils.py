@@ -130,6 +130,13 @@ def remove_silent_files(path, ext="wav"):
         os.remove(full_path)
 
 
+def generate_labeled_data(filename, ext="wav"):
+    df = pd.read_csv(filename, sep="\t")
+    df["X"] = df["X"].astype(str) + "." + ext
+    output = "labeled_{}.tsv".format(ext)
+    df.to_csv(output, index=None, sep="\t")
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -175,6 +182,12 @@ if __name__ == "__main__":
         "--remove_silent",
         action="store_true",
         help="Set this to specfiy the file extension that you want to process on.")
+    parser.add_argument(
+        "-g",
+        "--generate_label",
+        action="store_true",
+        help="Set this to generate labeled data from existing.")
+
 
     args = parser.parse_args()
     input_path = args.input_path
@@ -253,3 +266,5 @@ if __name__ == "__main__":
     if args.remove_silent:
         if main_dir:        
             remove_silent_files(main_dir, ext)
+    if args.generate_label:
+        generate_labeled_data(input_path, ext):
