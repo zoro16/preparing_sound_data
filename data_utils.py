@@ -129,12 +129,16 @@ def remove_silent_files(path, ext="wav"):
         print(full_path)
         os.remove(full_path)
 
-
 def generate_labeled_data(filename, ext="wav"):
     df = pd.read_csv(filename, sep="\t")
     df["X"] = df["X"].astype(str) + "." + ext
     output = "labeled_{}.tsv".format(ext)
     df.to_csv(output, index=None, sep="\t")
+
+def check_wav_lenght(filename):
+    sound = AudioSegment.from_wav(names[0])
+    return len(sound) / 1000
+
 
 
 if __name__ == "__main__":
