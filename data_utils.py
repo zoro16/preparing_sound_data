@@ -148,21 +148,22 @@ def combine_audio_chuncks(chuncks):
         combined += chunck
     return combined
 
-def remove_silence_from_audio(sound, output, ext="wav"):
+def remove_silence_from_audio(sound, ext="wav", min_silence_len=100, silence_thresh=-60, keep_silence=100):
+    output = "{}_combined.{}".format(sound[:-4], ext)
     if type(sound) is str:
         sound = AudioSegment.from_wav(fname)
         silance_chunck = split_on_silence(sound,
-                                          min_silence_len=100,
-                                          silence_thresh=-60,
-                                          keep_silence=100)
-        combined.export("/path/to/combined.wav", format=ext)
+                                          min_silence_len=min_silence_len,
+                                          silence_thresh=silence_thresh,
+                                          keep_silence=keep_silence)
+        combined.export(output, format=ext)
 
     if type(sound) is AudioSegment:
         silance_chunck = split_on_silence(sound,
-                                          min_silence_len=100,
-                                          silence_thresh=-60,
-                                          keep_silence=100)
-        combined.export("/path/to/combined.wav", format='wav')
+                                          min_silence_len=min_silence_len,
+                                          silence_thresh=silence_thresh,
+                                          keep_silence=keep_silence)
+        combined.export(output, format='wav')
 
 
 
