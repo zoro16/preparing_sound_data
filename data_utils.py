@@ -135,12 +135,34 @@ def generate_labeled_data(filename, ext="wav"):
     output = "labeled_{}.tsv".format(ext)
     df.to_csv(output, index=None, sep="\t")
 
-def check_wav_lenght(filename):
-    if type(filename) is str:
-        sound = AudioSegment.from_wav(filename)
+def check_wave_lenght(sound):
+    if type(sound) is str:
+        sound = AudioSegment.from_wav(sound)
         return len(sound) / 1000  # sound.duration_seconds
-    else:
-        return len(filename) / 1000
+    if type(sound) is AudioSegment:
+        return len(sound) / 1000
+
+def combine_audio_chuncks(chuncks):
+    combined = None
+    for chunck in chuncks:
+        combined += chunck
+    return combined
+
+def remove_silence_from_audio(sound, output, ext="wav"):
+    if type(sound) is str:
+        sound = AudioSegment.from_wav(fname)
+        silance_chunck = split_on_silence(sound,
+                                          min_silence_len=100,
+                                          silence_thresh=-60,
+                                          keep_silence=100)
+        combined.export("/path/to/combined.wav", format=ext)
+
+    if type(sound) is AudioSegment:
+        silance_chunck = split_on_silence(sound,
+                                          min_silence_len=100,
+                                          silence_thresh=-60,
+                                          keep_silence=100)
+        combined.export("/path/to/combined.wav", format='wav')
 
 
 
