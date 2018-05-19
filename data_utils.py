@@ -136,8 +136,11 @@ def generate_labeled_data(filename, ext="wav"):
     df.to_csv(output, index=None, sep="\t")
 
 def check_wav_lenght(filename):
-    sound = AudioSegment.from_wav(names[0])
-    return len(sound) / 1000
+    if type(filename) is str:
+        sound = AudioSegment.from_wav(filename)
+        return len(sound) / 1000  # sound.duration_seconds
+    else:
+        return len(filename) / 1000
 
 
 
