@@ -148,7 +148,10 @@ def combine_audio_chuncks(chuncks):
         combined += chunck
     return combined
 
-def remove_silence_from_audio(sound, ext="wav", min_silence_len=100, silence_thresh=-60, keep_silence=100):
+def remove_silence_from_audio(sound, ext="wav",
+                              min_silence_len=100,
+                              silence_thresh=-60,
+                              keep_silence=100):
     output = "{}_combined.{}".format(sound[:-4], ext)
     if type(sound) is str:
         sound = AudioSegment.from_wav(fname)
@@ -178,9 +181,21 @@ if __name__ == "__main__":
         "--output_path",
         help="Set this flag to specfiy the output path")
     parser.add_argument(
+        "--min_silence_len",
+        help="Set this for `remove_silence_from_audio` command to set a differen "\
+        "minimum silece length (in ms)")
+    parser.add_argument(
+        "--silence_thresh",
+        help="Set this for `remove_silence_from_audio` command to set silence thresh (in dBFS)")
+    parser.add_argument(
+        "--keep_silence",
+        help="Set this for `remove_silence_from_audio` command to set the amount of "\
+        "silence to leave at the beginning and end of the chunks (in ms)")
+    parser.add_argument(
         "-p",
         "--main_dir",
-        help="This flag to specify the main audio files directory path e.g `/mountdir/data/civilization/`")
+        help="This flag to specify the main audio files directory path"\
+        " e.g `/mountdir/data/civilization/`")
     parser.add_argument(
         "-e",
         "--extension",
@@ -189,7 +204,8 @@ if __name__ == "__main__":
         "-s",
         "--slice_audio",
         action="store_true",
-        help="Set this flag if you want to slice the *.wav file into chuncks of 10sec audio files")
+        help="Set this flag if you want to slice the *.wav file into"
+        "chuncks of 10sec audio files")
     parser.add_argument(
         "-S",
         "--to_spectrogram",
@@ -198,20 +214,28 @@ if __name__ == "__main__":
     parser.add_argument(
         "--png2jpg",
         action="store_true",
-        help="Set this to convert *.png images to *.jpg, you need to install imagmagick in you *inux machine")
+        help="Set this to convert *.png images to *.jpg, you need to install"\
+        " imagmagick in you *inux machine")
     parser.add_argument(
         "--mp32wav",
         action="store_true",
-        help="Set this to convert *.mp3 audio files to *.wav, you need to install ffmpeg in you *inux machine")
+        help="Set this to convert *.mp3 audio files to *.wav, you need to install"\
+        " ffmpeg in you *inux machine")
     parser.add_argument(
         "--check_inf",
         action="store_true",
         help="Set this to check if audio files are silence")
     parser.add_argument(
-        "-r",
+        "-rsf",
         "--remove_silent",
         action="store_true",
         help="Set this to specfiy the file extension that you want to process on.")
+    parser.add_argument(
+        "-rsa",
+        "--remove_silence_from_audio",
+        action="store_true",
+        help="Set this to remove silence from wave file then combine the chuncks"\
+        " with no silece in them.")
     parser.add_argument(
         "-g",
         "--generate_label",
@@ -224,6 +248,11 @@ if __name__ == "__main__":
     output_path = args.output_path
     main_dir = args.main_dir
     ext = args.extension
+    min_silence_len = args.min_silence_len
+    silence_thresh = args.silence_thresh
+    keep_silence = args.keep_silence
+
+
 
     if args.to_spectrogram:
         if main_dir:
@@ -296,5 +325,14 @@ if __name__ == "__main__":
     if args.remove_silent:
         if main_dir:        
             remove_silent_files(main_dir, ext)
+
     if args.generate_label:
-        generate_labeled_data(input_path, ext):
+        generate_labeled_data(input_path, ext)
+
+    if args.remove_silence_from_audio:
+        print("Start")
+        remove_silence_from_audio(input_path, ext,
+                                  min_silence_len,
+                                  silence_thresh,
+                                  keep_silence)
+        print("End")
