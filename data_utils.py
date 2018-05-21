@@ -2,6 +2,7 @@ import os
 import argparse
 from scipy.io import wavfile
 from pydub import AudioSegment
+from pydub.silence import split_on_silence
 from PIL import Image
 import matplotlib
 matplotlib.use('Agg')
@@ -142,32 +143,37 @@ def check_wave_lenght(sound):
     if type(sound) is AudioSegment:
         return len(sound) / 1000
 
-def combine_audio_chuncks(chuncks):
-    combined = None
-    for chunck in chuncks:
-        combined += chunck
+def combine_audio_chunks(chunks):
+    combined = [chunks[0]]
+    for chunk in chunks[1:]:
+        combined[-1] += chunk
     return combined
 
-def remove_silence_from_audio(sound, ext="wav",
-                              min_silence_len=100,
-                              silence_thresh=-60,
-                              keep_silence=100):
-    output = "{}_combined.{}".format(sound[:-4], ext)
+def remove_silence_from_audio(sound, ext,
+                              min_silence_len,
+                              silence_thresh,
+                              keep_silence):
+    output = "{}_nosilence.{}".format(sound[:-4], ext)
     if type(sound) is str:
-        sound = AudioSegment.from_wav(fname)
-        silance_chunck = split_on_silence(sound,
+        sound = AudioSegment.from_wav(sound)
+        silance_chunk = split_on_silence(sound,
                                           min_silence_len=min_silence_len,
                                           silence_thresh=silence_thresh,
                                           keep_silence=keep_silence)
+        combined = silance_chunk[0]
+        for chunk in silance_chunk[1:]:
+            combined += chunk
         combined.export(output, format=ext)
 
-    if type(sound) is AudioSegment:
-        silance_chunck = split_on_silence(sound,
+    elif type(sound) is AudioSegment:
+        silance_chunk = split_on_silence(sound,
                                           min_silence_len=min_silence_len,
                                           silence_thresh=silence_thresh,
                                           keep_silence=keep_silence)
-        combined.export(output, format='wav')
-
+        combined = silance_chunk[0]
+        for chunk in silance_chunk[1:]:
+            combined += chunk
+        combined.export(output, format="wav")
 
 
 if __name__ == "__main__":
@@ -205,7 +211,7 @@ if __name__ == "__main__":
         "--slice_audio",
         action="store_true",
         help="Set this flag if you want to slice the *.wav file into"
-        "chuncks of 10sec audio files")
+        "chunks of 10sec audio files")
     parser.add_argument(
         "-S",
         "--to_spectrogram",
@@ -234,7 +240,7 @@ if __name__ == "__main__":
         "-rsa",
         "--remove_silence_from_audio",
         action="store_true",
-        help="Set this to remove silence from wave file then combine the chuncks"\
+        help="Set this to remove silence from wave file then combine the chunks"\
         " with no silece in them.")
     parser.add_argument(
         "-g",
@@ -331,8 +337,8 @@ if __name__ == "__main__":
 
     if args.remove_silence_from_audio:
         print("Start")
-        remove_silence_from_audio(input_path, ext,
-                                  min_silence_len,
-                                  silence_thresh,
-                                  keep_silence)
-        print("End")
+        remove_silence_from_audio(input_path, ext="wav",
+                                  min_silence_len=50,
+                                  silence_thresh=-60,
+                                  keep_silence=50)
+        print("Done!")
