@@ -152,8 +152,12 @@ def combine_audio_chunks(chunks):
 def remove_silence_from_audio(sound, ext,
                               min_silence_len,
                               silence_thresh,
-                              keep_silence):
+                              keep_silence,
+                              to_ignore):
+
+    ignored_sound = AudioSegment.from_wav(to_ignore)
     output = "{}_nosilence.{}".format(sound[:-4], ext)
+
     if type(sound) is str:
         sound = AudioSegment.from_wav(sound)
         silance_chunk = split_on_silence(sound,
@@ -162,7 +166,10 @@ def remove_silence_from_audio(sound, ext,
                                           keep_silence=keep_silence)
         combined = silance_chunk[0]
         for chunk in silance_chunk[1:]:
-            combined += chunk
+            if chunk == ignored_sound:
+                continue
+            else:
+                combined += chunk
         combined.export(output, format=ext)
 
     elif type(sound) is AudioSegment:
@@ -172,7 +179,10 @@ def remove_silence_from_audio(sound, ext,
                                           keep_silence=keep_silence)
         combined = silance_chunk[0]
         for chunk in silance_chunk[1:]:
-            combined += chunk
+            if chunk == ignored_sound:
+                continue
+            else:
+                combined += chunk
         combined.export(output, format="wav")
 
 
@@ -190,6 +200,9 @@ if __name__ == "__main__":
         "--min_silence_len",
         help="Set this for `remove_silence_from_audio` command to set a differen "\
         "minimum silece length (in ms)")
+    parser.add_argument(
+        "--to_ignore",
+        help="Set this for `remove_silence_from_audio` command to specify which sound to ignore")
     parser.add_argument(
         "--silence_thresh",
         help="Set this for `remove_silence_from_audio` command to set silence thresh (in dBFS)")
@@ -257,7 +270,7 @@ if __name__ == "__main__":
     min_silence_len = args.min_silence_len
     silence_thresh = args.silence_thresh
     keep_silence = args.keep_silence
-
+    to_ignore = args.to_ignore
 
 
     if args.to_spectrogram:
@@ -339,6 +352,7 @@ if __name__ == "__main__":
         print("Start")
         remove_silence_from_audio(input_path, ext="wav",
                                   min_silence_len=50,
-                                  silence_thresh=-60,
-                                  keep_silence=50)
+                                  silence_thresh=-65,
+                                  keep_silence=50,
+                                  to_ignore)
         print("Done!")
