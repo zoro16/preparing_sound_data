@@ -11,23 +11,59 @@ from tqdm import tqdm
 from collections import OrderedDict
 from subprocess import call
 import pandas as pd
-# from pydub.utils import which
-# AudioSegment.converter = which("ffmpeg")
+from functools import wraps
 
 
+def validate_extension(fname):
+    if fname.endswith("wav") or fname.endswith("mp3") or fname.endswith("jpg") or fname.endswith("png"):
+        return True
+    else:
+        return False
 
-def audio_to_chunks(path, save_as):
-    audio = preprocess_audio(path)
+def dir_loop_decorate(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        root = os.getcwd()
+        klasses = os.path.join(root, kwargs["main_dir"])
+        if os.path.isdir(klasses):
+            for klass in os.listdir(klasses):
+                klass = os.path.join(klasses, klass)
+                if os.path.isdir(klass):
+                    for filename in os.listdir(klass):
+                        if validate_extension(filename):
+                            path = os.path.join(klass, filename)
+                            if func.__name__ == "audio_to_chunks":
+                                kwargs["input_path"] = path
+                                kwargs["output_path"] = None
+                                func(*args, **kwargs)
+                            if func.__name__ == "mp3_to_wav":
+                                func(*args, **kwargs)
+    return wrapper
 
-    head, tail = os.path.split(path)
-    name = tail[:-4]
+def audio_to_chunks(*args, **kwargs):
+    temp = {"output_path": None, "input_path": None}
+    if not kwargs["output_path"]:
+        temp["output_path"] = os.path.dirname(kwargs["input_path"])
+        temp["input_path"] = kwargs["input_path"]
+    else:
+        temp["output_path"] = kwargs["output_path"]
+        temp["input_path"] = kwargs["input_path"]
+
+    audio = preprocess_audio(temp["input_path"])
+    name = os.path.basename(temp["input_path"])[:-4]
+
     # SPLIT SOUND IN 10-SECOND SLICES AND EXPORT
     for i, chunk in enumerate(audio[::10000]):
-        with open("{}/{}_{:04d}.wav".format(save_as, name, i), "wb") as f:
+        with open("{}/{}_{:04d}.wav".format(temp["output_path"], name, i), "wb") as f:
             chunk.export(f, format="wav")
+
 
 # PREPROCESS THE AUDIO TO THE CORRECT FORMAT
 def preprocess_audio(filename):
+    if filename.endswith("mp3"):
+        mp3_to_wav(filename)
+        filename = filename[:-3] += "wav"
+        #filename += "wav"
     # TRIM OR PAD AUDIO SEGMENT TO 10000MS
     # padding = AudioSegment.silent(duration=10000)
     segment = AudioSegment.from_wav(filename)
@@ -44,9 +80,9 @@ def get_wav_info(wav_file):
     rate, data = wavfile.read(wav_file)
     return rate, data
 
-def mp3_to_wav(input_path):
-    output_path = "{}.wav".format(input_path[:-4])
-    sound = AudioSegment.from_mp3(input_path)
+def mp3_to_wav(*args, **kwargs):
+    output_path = "{}.wav".format(kwargs["input_path"][:-4])
+    sound = AudioSegment.from_mp3(kwargs["input_path"])
     sound.export(output_path, format="wav")
 
 # CALCULATE AND PLOT SPECTROGRAM FOR A WAV AUDIO FILE
@@ -105,21 +141,17 @@ def match_target_amplitude(sound, target_dBFS):
     return sound.apply_gain(change_in_dBFS)
 
 # CHECK FOR SILENT FILES OR dBFS IS -INF
-def check_for_inf_amplitude(main_dir):
-    wd = os.getcwd()
-    path = os.path.join(wd, main_dir)
-    for klass in os.listdir(path):
-        c_klass = os.path.join(path, klass)
-        os.chdir(c_klass)
-        for filename in os.listdir(c_klass):
-            filename = os.path.join(c_klass, filename)
-            segment = AudioSegment.from_wav(filename)
-            if segment.dBFS == -float("inf"):
-                print(filename)
+@dir_loop_decorate
+def check_for_inf_amplitude(*args, **kwargs):
+    segment = AudioSegment.from_wav(kwargs["input_path"])
+    if segment.dBFS == -float("inf"):
+        print(kwargs["input_path"])
 
 def remove_silent_files(path, ext="wav"):
     # PRE-STEP
-    # df = pd.read_csv("silent_files.txt", sep="/", header=None, names=["class", "filename"])
+    # df = pd.read_csv("silent_files.txt", sep="/",
+    #                  header=None,
+    #                  names=["class", "filename"])
     # df["filename"] = df["filename"].str.replace(".wav", "")
     # df.to_csv("silent_files.tsv", sep="\t", index=None)
 
@@ -143,10 +175,23 @@ def check_wave_lenght(sound):
     if type(sound) is AudioSegment:
         return len(sound) / 1000
 
-def combine_audio_chunks(chunks):
-    combined = [chunks[0]]
-    for chunk in chunks[1:]:
-        combined[-1] += chunk
+def check_beginning_to_ignore(current, check):
+    clean_audio = None
+    if current[:134] == check:
+        clean_audio = current[135:]
+    else:
+        clean_audio = current
+    return clean_audio
+
+def combine_chunks(chunks, ignored_sound):
+    combined = None
+    if chunks:
+        combined = check_beginning_to_ignore(chunks[0], ignored_sound)
+        for chunk in chunks[1:]:
+            if chunk == ignored_sound:
+                continue
+            else:
+                combined += chunk
     return combined
 
 def remove_silence_from_audio(sound, ext,
@@ -154,35 +199,27 @@ def remove_silence_from_audio(sound, ext,
                               silence_thresh,
                               keep_silence,
                               to_ignore):
-
     ignored_sound = AudioSegment.from_wav(to_ignore)
     output = "{}_nosilence.{}".format(sound[:-4], ext)
-
     if type(sound) is str:
         sound = AudioSegment.from_wav(sound)
-        silance_chunk = split_on_silence(sound,
-                                          min_silence_len=min_silence_len,
-                                          silence_thresh=silence_thresh,
-                                          keep_silence=keep_silence)
-        combined = silance_chunk[0]
-        for chunk in silance_chunk[1:]:
-            if chunk == ignored_sound:
-                continue
-            else:
-                combined += chunk
+        silence_chunks = split_on_silence(
+            sound,
+            min_silence_len=min_silence_len,
+            silence_thresh=silence_thresh,
+            keep_silence=keep_silence
+        )
+        combined = combine_chunks(silence_chunks, ignored_sound)
         combined.export(output, format=ext)
 
     elif type(sound) is AudioSegment:
-        silance_chunk = split_on_silence(sound,
-                                          min_silence_len=min_silence_len,
-                                          silence_thresh=silence_thresh,
-                                          keep_silence=keep_silence)
-        combined = silance_chunk[0]
-        for chunk in silance_chunk[1:]:
-            if chunk == ignored_sound:
-                continue
-            else:
-                combined += chunk
+        silence_chunks = split_on_silence(
+            sound,
+            min_silence_len=min_silence_len,
+            silence_thresh=silence_thresh,
+            keep_silence=keep_silence
+        )
+        combined = combine_chunks(silence_chunks, ignored_sound)
         combined.export(output, format="wav")
 
 
@@ -272,7 +309,6 @@ if __name__ == "__main__":
     keep_silence = args.keep_silence
     to_ignore = args.to_ignore
 
-
     if args.to_spectrogram:
         if main_dir:
             full_list = {}
@@ -300,42 +336,21 @@ if __name__ == "__main__":
         
     if args.slice_audio:
         if main_dir:
-            for dirs in tqdm(os.listdir(main_dir),
-                             desc='Main Classes',
-                             leave=True):
-                main_path = "{}/{}".format(main_dir, dirs)
-                list_of_files = os.listdir(main_path)
-                for filename in tqdm(list_of_files,
-                                     desc='File: ',
-                                     leave=True):
-                    path = "{}/{}".format(main_path, filename)
-                    if path.endswith("mp3"):
-                        mp3_to_wav(path)
-                        audio_to_chunks(input_path, output_path)
-                    if path.endswith("wav"):
-                        audio_to_chunks(input_path, output_path)
+            audio_to_chunks_for_all = dir_loop_decorate(audio_to_chunks)
+            audio_to_chunks_for_all(main_dir=main_dir, output_path=output_path)
         else:
-            if path.endswith("mp3"):
-                print("convert from mp3 to wav")
-                mp3_to_wav(input_path)
-                print("start slicing audio files")
-                audio_to_chunks(input_path, output_path)
-                print("Done!")
-            if path.endswith("wav"):
-                print("start slicing audio files")
-                audio_to_chunks(input_path, output_path)
-                print("Done!")
+            audio_to_chunks(input_path, output_path)
 
     if args.png2jpg:
         if main_dir:
-            print("Start converting from png to jpg")
             png_to_jpg(main_dir)
-            print("Done!")
 
     if args.mp32wav:
-        print("convert from mp3 to wav")
-        mp3_to_wav(input_path)
-        print("Done!")
+        if main_dir:
+            mp3_to_wav_for_all = dir_loop_decorate(mp3_to_wav)
+            mp3_to_wav_for_all(main_dir=main_dir, input_path=input_path)
+        else:
+            mp3_to_wav(input_path=input_path)
 
     if args.check_inf:
         if main_dir:
@@ -349,10 +364,4 @@ if __name__ == "__main__":
         generate_labeled_data(input_path, ext)
 
     if args.remove_silence_from_audio:
-        print("Start")
-        remove_silence_from_audio(input_path, ext="wav",
-                                  min_silence_len=50,
-                                  silence_thresh=-65,
-                                  keep_silence=50,
-                                  to_ignore)
-        print("Done!")
+        remove_silence_from_audio(input_path, "wav", 50, -65, 50, to_ignore)
