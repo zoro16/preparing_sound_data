@@ -1,17 +1,18 @@
 import os
+import platform
 import argparse
 from scipy.io import wavfile
 from pydub import AudioSegment
 from pydub.silence import split_on_silence
 from PIL import Image
 import matplotlib
-matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-from tqdm import tqdm
+matplotlib.use('Agg')
 from collections import OrderedDict
 from subprocess import call
 import pandas as pd
 from functools import wraps
+
 
 
 def validate_extension(fname):
@@ -54,7 +55,9 @@ def dir_loop_decorate(func):
                     if func.__name__ == "remove_silence_from_audio":
                         kwargs["input_path"] = path
                         func(*args, **kwargs)
-
+                    if func.__name__ == "convert_to":
+                        kwargs["input_path"] = path
+                        func(*args, **kwargs)
     return wrapper
 
 def audio_to_chunks(*args, **kwargs):
@@ -136,15 +139,17 @@ def save_spectrogram_as_png(plt, wav_filename):
     plt.close()
     # convert_to_jpg(png_filename)
 
-def convert_to_jpg(filename):
+def convert_to(*args, **kwargs):
+    filename = kwargs["input_path"]
+    ext= kwargs["ext"]
     im = Image.open(filename)
     rgb_im = im.convert('RGB')
-    rgb_im.save("{}.jpg".format(filename[:-4]))
+    rgb_im.save("{}.{}".format(filename[:-4], ext))
     # if os.path.exists(filename):
     #     os.remove(filename)
 
 # ImageMagick HAS TO BE INSTALLED
-def png_to_jpg(main_dir):
+def png_to_jpg(*args, **kwargs):
     wd = os.getcwd()
     path = os.path.join(wd, main_dir)
     for klass in os.listdir(path):
@@ -367,7 +372,13 @@ if __name__ == "__main__":
 
     if args.png2jpg:
         if main_dir:
-            png_to_jpg(main_dir)
+            if platform.system() == "Linux" or platform.system() == "Linux2":
+                png_to_jpg(main_dir)
+            else:
+                convert_to_all = dir_loop_decorate(convert_to)
+                convert_to_all(main_dir=main_dir, ext="jpg")
+        else:
+            convert_to(input_path=input_path, ext="jpg")
 
     if args.mp32wav:
         if main_dir:
