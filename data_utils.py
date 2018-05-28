@@ -20,24 +20,41 @@ def validate_extension(fname):
     else:
         return False
 
+def iter_dir(folder):
+    folders = []
+    root = os.getcwd()
+    folder_path = os.path.join(root, folder)
+    if os.path.isdir(folder_path):
+        for sub_folder in os.listdir(folder_path):
+            sub_folder_path = os.path.join(folder_path, sub_folder)
+            if os.path.isdir(sub_folder_path):
+                folders.append(sub_folder_path)
+    return folders
+
 def dir_loop_decorate(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
         root = os.getcwd()
-        klasses = os.path.join(root, kwargs["main_dir"])
-        if os.path.isdir(klasses):
-            for klass in os.listdir(klasses):
-                klass = os.path.join(klasses, klass)
-                if os.path.isdir(klass):
-                    for filename in os.listdir(klass):
-                        if validate_extension(filename):
-                            path = os.path.join(klass, filename)
-                            if func.__name__ == "audio_to_chunks":
-                                kwargs["input_path"] = path
-                                kwargs["output_path"] = None
-                                func(*args, **kwargs)
-                            if func.__name__ == "mp3_to_wav":
-                                func(*args, **kwargs)
+        klasses = iter_dir(kwargs["main_dir"])
+        for klass in klasses:
+            for filename in os.listdir(klass):
+                if validate_extension(filename):
+                    path = os.path.join(klass, filename)
+                    if func.__name__ == "audio_to_chunks":
+                        kwargs["input_path"] = path
+                        kwargs["output_path"] = None
+                        func(*args, **kwargs)
+                    if func.__name__ == "mp3_to_wav":
+                        kwargs["input_path"] = path
+                        func(*args, **kwargs)
+                        full_list[klass] = temp
+                    if func.__name__ == "check_inf_amplitude":
+                        kwargs["input_path"] = path
+                        func(*args, **kwargs)
+                    if func.__name__ == "remove_silence_from_audio":
+                        kwargs["input_path"] = path
+                        func(*args, **kwargs)
+
     return wrapper
 
 def audio_to_chunks(*args, **kwargs):
@@ -62,8 +79,8 @@ def audio_to_chunks(*args, **kwargs):
 def preprocess_audio(filename):
     if filename.endswith("mp3"):
         mp3_to_wav(filename)
-        filename = filename[:-3] += "wav"
-        #filename += "wav"
+        filename = filename[:-3]
+        filename += "wav"
     # TRIM OR PAD AUDIO SEGMENT TO 10000MS
     # padding = AudioSegment.silent(duration=10000)
     segment = AudioSegment.from_wav(filename)
@@ -99,15 +116,15 @@ def graph_spectrogram(wav_file):
 
     return pxx
 
-def wav_to_jpg(filename):
-    rate, data = get_wav_info(filename)
+def wav_to_png(*args, **kwargs):
+    rate, data = get_wav_info(kwargs["input_path"])
     nfft = 256 # LENGTH OF EACH WINDOW SEGMENT
     fs = 256 # SAMPLING FREQUENCIES
     pxx, freqs, bins, im = plt.specgram(data, nfft, fs)
     plt.axis('off')
-    save_spectrogram_as_jpg(plt, filename)
+    save_spectrogram_as_png(plt, kwargs["input_path"])
 
-def save_spectrogram_as_jpg(plt, wav_filename):
+def save_spectrogram_as_png(plt, wav_filename):
     # mpl.rcParams["savefig.directory"] = os.chdir(output_path)
     png_filename = "{}.png".format(wav_filename[:-4])
     
@@ -141,21 +158,21 @@ def match_target_amplitude(sound, target_dBFS):
     return sound.apply_gain(change_in_dBFS)
 
 # CHECK FOR SILENT FILES OR dBFS IS -INF
-@dir_loop_decorate
-def check_for_inf_amplitude(*args, **kwargs):
-    segment = AudioSegment.from_wav(kwargs["input_path"])
-    if segment.dBFS == -float("inf"):
-        print(kwargs["input_path"])
+def check_inf_amplitude(*args, **kwargs):
+    f = open("silent_files00.txt", "w")
+    if kwargs["input_path"].endswith("wav"):
+        segment = AudioSegment.from_wav(kwargs["input_path"])
+        if segment.dBFS == -float("inf"):
+            print(kwargs["input_path"])
+            f.write(kwargs["input_path"])
 
 def remove_silent_files(path, ext="wav"):
-    # PRE-STEP
-    # df = pd.read_csv("silent_files.txt", sep="/",
-    #                  header=None,
-    #                  names=["class", "filename"])
-    # df["filename"] = df["filename"].str.replace(".wav", "")
-    # df.to_csv("silent_files.tsv", sep="\t", index=None)
-
-    df = pd.read_table("silent_files.tsv")
+    df = None
+    try:
+        os.path.isfile("silent_files.tsv")
+        df = pd.read_table("silent_files.tsv")
+    except:
+        return "File Does Not Exists"
 
     for i, k in zip(df["class"], df["filename"]):
         full_path = "{}/{}/{}.{}".format(path, i, k, ext)
@@ -194,33 +211,33 @@ def combine_chunks(chunks, ignored_sound):
                 combined += chunk
     return combined
 
-def remove_silence_from_audio(sound, ext,
-                              min_silence_len,
-                              silence_thresh,
-                              keep_silence,
-                              to_ignore):
-    ignored_sound = AudioSegment.from_wav(to_ignore)
+def remove_silence_from_audio(*args, **kwargs):
+    ignored_sound = AudioSegment.from_wav(kwargs["to_ignore"])
+    sound = kwargs["input_path"]
+    ext = kwargs["ext"]
     output = "{}_nosilence.{}".format(sound[:-4], ext)
     if type(sound) is str:
         sound = AudioSegment.from_wav(sound)
         silence_chunks = split_on_silence(
             sound,
-            min_silence_len=min_silence_len,
-            silence_thresh=silence_thresh,
-            keep_silence=keep_silence
+            min_silence_len=kwargs["min_silence_len"],
+            silence_thresh=kwargs["silence_thresh"],
+            keep_silence=kwargs["keep_silence"]
         )
         combined = combine_chunks(silence_chunks, ignored_sound)
+        print(kwargs["input_path"])
         combined.export(output, format=ext)
 
     elif type(sound) is AudioSegment:
         silence_chunks = split_on_silence(
             sound,
-            min_silence_len=min_silence_len,
-            silence_thresh=silence_thresh,
-            keep_silence=keep_silence
+            min_silence_len=kwargs["min_silence_len"],
+            silence_thresh=kwargs["silence_thresh"],
+            keep_silence=kwargs["keep_silence"]
         )
         combined = combine_chunks(silence_chunks, ignored_sound)
-        combined.export(output, format="wav")
+        print(kwargs["input_path"])
+        combined.export(output, format=ext)
 
 
 if __name__ == "__main__":
@@ -235,6 +252,8 @@ if __name__ == "__main__":
         help="Set this flag to specfiy the output path")
     parser.add_argument(
         "--min_silence_len",
+        type=int,
+        default=50,
         help="Set this for `remove_silence_from_audio` command to set a differen "\
         "minimum silece length (in ms)")
     parser.add_argument(
@@ -242,9 +261,13 @@ if __name__ == "__main__":
         help="Set this for `remove_silence_from_audio` command to specify which sound to ignore")
     parser.add_argument(
         "--silence_thresh",
+        type=int,
+        default=-65,
         help="Set this for `remove_silence_from_audio` command to set silence thresh (in dBFS)")
     parser.add_argument(
         "--keep_silence",
+        type=int,
+        default=50,
         help="Set this for `remove_silence_from_audio` command to set the amount of "\
         "silence to leave at the beginning and end of the chunks (in ms)")
     parser.add_argument(
@@ -255,6 +278,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "-e",
         "--extension",
+        default="wav",
         help="Set this to specfiy the file extension that you want to process on.")
     parser.add_argument(
         "-s",
@@ -312,11 +336,10 @@ if __name__ == "__main__":
     if args.to_spectrogram:
         if main_dir:
             full_list = {}
-            for klass in os.listdir(main_dir):
-                main_path = "{}/{}".format(main_dir, klass)
-                temp = []
-                for filename in os.listdir(main_path):
-                    p = "{}/{}/{}".format(main_dir, klass, filename)
+            temp = []
+            for klass in iter_dir(main_dir):
+                for filename in os.listdir(klass):
+                    p = os.path.join(klass, filename)
                     temp.append(p)
                 full_list[klass] = temp
 
@@ -330,9 +353,10 @@ if __name__ == "__main__":
                     else:
                         if filename.endswith(".wav"):
                             print(filename)
-                            wav_to_jpg(filename)
+                            wav_to_png(input_path=filename)
+
         else:
-            wav_to_jpg(input_path)
+            wav_to_png(input_path=input_path)
         
     if args.slice_audio:
         if main_dir:
@@ -348,13 +372,16 @@ if __name__ == "__main__":
     if args.mp32wav:
         if main_dir:
             mp3_to_wav_for_all = dir_loop_decorate(mp3_to_wav)
-            mp3_to_wav_for_all(main_dir=main_dir, input_path=input_path)
+            mp3_to_wav_for_all(main_dir=main_dir)
         else:
             mp3_to_wav(input_path=input_path)
 
     if args.check_inf:
         if main_dir:
-            check_for_inf_amplitude(main_dir)
+            check_inf_amplitude_for_all = dir_loop_decorate(check_inf_amplitude)
+            check_inf_amplitude_for_all(main_dir=main_dir)
+        else:
+            check_inf_amplitude(input_path=input_path)
 
     if args.remove_silent:
         if main_dir:        
@@ -364,4 +391,18 @@ if __name__ == "__main__":
         generate_labeled_data(input_path, ext)
 
     if args.remove_silence_from_audio:
-        remove_silence_from_audio(input_path, "wav", 50, -65, 50, to_ignore)
+        if main_dir:
+            remove_silence_from_audio_for_all = dir_loop_decorate(remove_silence_from_audio)
+            remove_silence_from_audio_for_all(main_dir=main_dir,
+                                              ext=ext,
+                                              min_silence_len=min_silence_len,
+                                              silence_thresh=silence_thresh,
+                                              keep_silence=keep_silence,
+                                              to_ignore=to_ignore)
+        else:
+            remove_silence_from_audio(input_path=input_path,
+                                      ext=ext,
+                                      min_silence_len=min_silence_len,
+                                      silence_thresh=silence_thresh,
+                                      keep_silence=keep_silence,
+                                      to_ignore=to_ignore)
