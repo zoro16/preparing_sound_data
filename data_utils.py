@@ -151,7 +151,7 @@ def convert_to(*args, **kwargs):
 # ImageMagick HAS TO BE INSTALLED
 def png_to_jpg(*args, **kwargs):
     wd = os.getcwd()
-    path = os.path.join(wd, main_dir)
+    path = os.path.join(wd, kwargs["main_dir"])
     for klass in os.listdir(path):
         c_klass = os.path.join(path, klass)
         os.chdir(c_klass)
@@ -262,6 +262,26 @@ def remove_silence_from_audio(*args, **kwargs):
             else:
                 combined.export(output, format=ext)
 
+def combine_small_audio(main_dir):
+    for klass in iter_dir(main_dir):
+        all_sounds = None
+        for fname in os.listdir(klass):
+            sound_path = os.path.join(klass, fname)
+            if sound_path.endswith("wav"):
+                lenght = check_wave_lenght(sound_path)
+                if lenght < 10:
+                    sound = AudioSegment.from_wav(sound_path)
+                    print("{}\t{}".format(fname, lenght))
+                    if all_sounds:
+                        all_sounds += sound
+                    else:
+                        all_sounds = sound
+        if all_sounds:
+            output = "all_{}.wav".format(os.path.basename(klass))
+            output = os.path.join(klass, output)
+            all_sounds.export(output, format="wav")
+
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -344,6 +364,12 @@ if __name__ == "__main__":
         "--generate_label",
         action="store_true",
         help="Set this to generate labeled data from existing.")
+    parser.add_argument(
+        "-c",
+        "--combine_small_audio",
+        action="store_true",
+        help="Set this to combine all the small audio files in one class"\
+        " to one audio file.")
 
 
     args = parser.parse_args()
@@ -378,6 +404,10 @@ if __name__ == "__main__":
                             print(filename)
                             wav_to_png(input_path=filename)
 
+                    # TO CONVERT ONLY AUDIO FILES WITH NO SILENCE
+                    # if filename.endswith("nosilence.wav"):
+                    #        print(filename)
+                    #        wav_to_png(input_path=filename)
         else:
             wav_to_png(input_path=input_path)
         
@@ -435,3 +465,6 @@ if __name__ == "__main__":
                                       silence_thresh=silence_thresh,
                                       keep_silence=keep_silence,
                                       to_ignore=to_ignore)
+    if args.combine_small_audio:
+        if main_dir:
+            combine_small_audio(main_dir)
