@@ -171,7 +171,7 @@ def check_inf_amplitude(*args, **kwargs):
             print(kwargs["input_path"])
             f.write(kwargs["input_path"])
 
-def remove_silent_files(path, ext="wav"):
+def remove_silent_files(path, ext):
     df = None
     try:
         os.path.isfile("silent_files.tsv")
@@ -184,7 +184,7 @@ def remove_silent_files(path, ext="wav"):
         print(full_path)
         os.remove(full_path)
 
-def generate_labeled_data(filename, ext="wav"):
+def generate_labeled_data(filename, ext):
     df = pd.read_csv(filename, sep="\t")
     df["X"] = df["X"].astype(str) + "." + ext
     output = "labeled_{}.tsv".format(ext)
