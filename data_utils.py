@@ -227,8 +227,8 @@ def remove_silence_from_audio(*args, **kwargs):
     ignored_sound = AudioSegment.from_wav(kwargs["to_ignore"])
     sound = kwargs["input_path"]
     ext = kwargs["ext"]
-    if "nosilence" not in sound: 
-        return
+    if "nosilence" in sound:
+        return "File already processed!"
     else:
         output = "{}_nosilence.{}".format(sound[:-4], ext)
     if type(sound) is str:
