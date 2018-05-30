@@ -219,13 +219,18 @@ def combine_chunks(chunks, ignored_sound):
                 continue
             else:
                 combined += chunk
-    return combined
+        return combined
+    else:
+        return []
 
 def remove_silence_from_audio(*args, **kwargs):
     ignored_sound = AudioSegment.from_wav(kwargs["to_ignore"])
     sound = kwargs["input_path"]
     ext = kwargs["ext"]
-    output = "{}_nosilence.{}".format(sound[:-4], ext)
+    if "nosilence" not in sound: 
+        return
+    else:
+        output = "{}_nosilence.{}".format(sound[:-4], ext)
     if type(sound) is str:
         sound = AudioSegment.from_wav(sound)
         silence_chunks = split_on_silence(
@@ -235,8 +240,12 @@ def remove_silence_from_audio(*args, **kwargs):
             keep_silence=kwargs["keep_silence"]
         )
         combined = combine_chunks(silence_chunks, ignored_sound)
-        print(kwargs["input_path"])
-        combined.export(output, format=ext)
+        if combined:
+            print(kwargs["input_path"])
+            if os.path.isfile(output):
+                return "File already exist"
+            else:
+                combined.export(output, format=ext)
 
     elif type(sound) is AudioSegment:
         silence_chunks = split_on_silence(
@@ -246,8 +255,12 @@ def remove_silence_from_audio(*args, **kwargs):
             keep_silence=kwargs["keep_silence"]
         )
         combined = combine_chunks(silence_chunks, ignored_sound)
-        print(kwargs["input_path"])
-        combined.export(output, format=ext)
+        if combined:
+            print(kwargs["input_path"])
+            if os.path.isfile(output):
+                return "File already exist"
+            else:
+                combined.export(output, format=ext)
 
 
 if __name__ == "__main__":
