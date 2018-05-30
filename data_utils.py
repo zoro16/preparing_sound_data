@@ -180,9 +180,12 @@ def remove_silent_files(path, ext):
         return "File Does Not Exists"
 
     for i, k in zip(df["class"], df["filename"]):
-        full_path = "{}/{}/{}.{}".format(path, i, k, ext)
-        print(full_path)
-        os.remove(full_path)
+        full_path = os.path.abspath("{}/{}/{}.{}".format(path, i, k, ext))
+        try:
+            os.remove(full_path)
+            print(full_path)
+        except FileNotFoundError:
+            pass
 
 def generate_labeled_data(filename, ext):
     df = pd.read_csv(filename, sep="\t")
