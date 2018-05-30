@@ -185,7 +185,9 @@ def remove_silent_files(path, ext):
             os.remove(full_path)
             print(full_path)
         except FileNotFoundError:
-            pass
+            print("File {} does not exist".format(k))
+            continue
+    print("Done!")
 
 def generate_labeled_data(filename, ext):
     df = pd.read_csv(filename, sep="\t")
