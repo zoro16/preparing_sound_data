@@ -286,6 +286,11 @@ def combine_small_audio(main_dir):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
+        "-p",
+        "--main_dir",
+        help="This flag to specify the main audio files directory path"\
+        " e.g `/mountdir/data/civilization/`")
+    parser.add_argument(
         "-i",
         "--input_path",
         help="Set this flag to specfiy the input path")
@@ -313,11 +318,6 @@ if __name__ == "__main__":
         default=50,
         help="Set this for `remove_silence_from_audio` command to set the amount of "\
         "silence to leave at the beginning and end of the chunks (in ms)")
-    parser.add_argument(
-        "-p",
-        "--main_dir",
-        help="This flag to specify the main audio files directory path"\
-        " e.g `/mountdir/data/civilization/`")
     parser.add_argument(
         "-e",
         "--extension",
@@ -370,6 +370,11 @@ if __name__ == "__main__":
         action="store_true",
         help="Set this to combine all the small audio files in one class"\
         " to one audio file.")
+    parser.add_argument(
+        "-l",
+        "--list_files_with_silence",
+        action="store_true",
+        help="This will check for the files that has been already processed and list them into text file.")
 
 
     args = parser.parse_args()
@@ -468,3 +473,21 @@ if __name__ == "__main__":
     if args.combine_small_audio:
         if main_dir:
             combine_small_audio(main_dir)
+
+    if args.list_files_with_silence:
+        if main_dir:
+            full_list = {}
+            temp = []
+            for klass in iter_dir(main_dir):
+                for filename in os.listdir(klass):
+                    p = os.path.join(klass, filename)
+                    temp.append(p)
+                full_list[klass] = temp
+
+            full_list = OrderedDict(sorted(full_list.items(), key=lambda t: t[0]))
+            f = open("to_delete_list.txt", "w")
+            for key, files_list in full_list.items():
+                files_list.sort()
+                for index, filename in enumerate(files_list):
+                    if files_list[index][:-14] == files_list[index-1][:-14]:
+                        f.write("{}\n".format(filename[:-4]))
