@@ -485,9 +485,16 @@ if __name__ == "__main__":
                 full_list[klass] = temp
 
             full_list = OrderedDict(sorted(full_list.items(), key=lambda t: t[0]))
-            f = open("to_delete_list.txt", "w")
+            f = open("to_delete_list.tsv", "w")
             for key, files_list in full_list.items():
                 files_list.sort()
                 for index, filename in enumerate(files_list):
-                    if files_list[index][:-14] == files_list[index-1][:-14]:
+                    if "nosilence" in filename:
                         f.write("{}\n".format(filename[:-4]))
+                        print(files_list[index-1])
+                        old_lenght = check_wave_lenght(files_list[index-1])
+                        new_lenght = check_wave_lenght(files_list[index])
+                        name = os.path.basename(files_list[index-1])
+                        klass = key.split("/")
+                        klass = klass[-1]
+                        f.write("{}\t{}\t{}\t{}\n".format(klass, name[:-4], old_lenght, new_lenght))
