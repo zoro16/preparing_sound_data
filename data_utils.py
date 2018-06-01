@@ -183,12 +183,14 @@ def match_target_amplitude(sound, target_dBFS):
 
 # CHECK FOR SILENT FILES OR dBFS IS -INF
 def check_inf_amplitude(*args, **kwargs):
-    f = open("silent_files00.txt", "w")
-    if kwargs["input_path"].endswith("wav"):
-        segment = AudioSegment.from_wav(kwargs["input_path"])
+    f = open("silent_files.tsv", "w")
+    filename = kwargs["input_path"]
+    if filename.endswith("wav"):
+        segment = AudioSegment.from_wav(filename)
         if segment.dBFS == -float("inf"):
-            print(kwargs["input_path"])
-            f.write(kwargs["input_path"])
+            print(filename)
+            f.write(filename)
+
 
 def remove_silent_files(path, ext):
     df = None
