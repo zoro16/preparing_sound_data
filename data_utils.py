@@ -27,6 +27,17 @@ def validate_image(fname):
     else:
         return False
 
+def iter_dir(folder):
+    folders = []
+    root = os.getcwd()
+    folder_path = os.path.join(root, folder)
+    if os.path.isdir(folder_path):
+        for sub_folder in os.listdir(folder_path):
+            sub_folder_path = os.path.join(folder_path, sub_folder)
+            if os.path.isdir(sub_folder_path):
+                folders.append(sub_folder_path)
+    return folders
+
 def get_sorted_dir(main_dir):
     full_list = {}
     temp = []
