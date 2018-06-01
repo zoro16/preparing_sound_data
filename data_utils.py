@@ -485,11 +485,9 @@ if __name__ == "__main__":
                 files_list.sort()
                 for index, filename in enumerate(files_list):
                     if "nosilence" in filename:
-                        f.write("{}\n".format(filename[:-4]))
                         print(files_list[index-1])
                         old_lenght = check_wave_lenght(files_list[index-1])
                         new_lenght = check_wave_lenght(files_list[index])
                         name = os.path.basename(files_list[index-1])
                         klass = key.split("/")
-                        klass = klass[-1]
-                        f.write("{}\t{}\t{}\t{}\n".format(klass, name[:-4], old_lenght, new_lenght))
+                        f.write("{}\t{}\t{}\t{}\n".format(klass[-1], name[:-4], old_lenght, new_lenght))
