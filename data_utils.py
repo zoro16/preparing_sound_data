@@ -242,6 +242,7 @@ def combine_chunks(chunks, ignored_sound):
 
 def remove_silence_from_audio(*args, **kwargs):
     ignored_sound = AudioSegment.from_wav(kwargs["to_ignore"])
+    filename = kwargs["input_path"]
     sound = kwargs["input_path"]
     ext = kwargs["ext"]
     silence_chunks = None
@@ -270,7 +271,7 @@ def remove_silence_from_audio(*args, **kwargs):
     if len(silence_chunks) > 1:
         combined = combine_chunks(silence_chunks, ignored_sound)
     if combined:
-        print(kwargs["input_path"])
+        print(filename)
         if os.path.isfile(output):
             return "File already exist"
         else:
