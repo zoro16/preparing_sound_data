@@ -15,23 +15,17 @@ from functools import wraps
 
 
 
-def validate_extension(fname):
-    if fname.endswith("wav") or fname.endswith("mp3") or fname.endswith("jpg") or fname.endswith("png"):
+def validate_audio(fname):
+    if fname.endswith("wav") or fname.endswith("mp3"):
         return True
     else:
         return False
 
-def iter_dir(folder):
-    folders = []
-    root = os.getcwd()
-    folder_path = os.path.join(root, folder)
-    if os.path.isdir(folder_path):
-        for sub_folder in os.listdir(folder_path):
-            sub_folder_path = os.path.join(folder_path, sub_folder)
-            if os.path.isdir(sub_folder_path):
-                folders.append(sub_folder_path)
-    return folders
-
+def validate_image(fname):
+    if fname.endswith("jpg") or fname.endswith("png"):
+        return True
+    else:
+        return False
 
 def get_sorted_dir(main_dir):
     full_list = {}
@@ -48,10 +42,11 @@ def dir_loop_decorate(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
         root = os.getcwd()
-        klasses = iter_dir(kwargs["main_dir"])
-        for klass in klasses:
-            for filename in os.listdir(klass):
-                if validate_extension(filename):
+        full_list = get_sorted_dir(kwargs["main_dir"])
+        for klass, files in full_list.items():
+            files.sort()
+            for index, filename in enumerate(files):
+                if validate_audio(filename):
                     path = os.path.join(klass, filename)
                     if func.__name__ == "audio_to_chunks":
                         kwargs["input_path"] = path
@@ -67,6 +62,7 @@ def dir_loop_decorate(func):
                     if func.__name__ == "remove_silence_from_audio":
                         kwargs["input_path"] = path
                         func(*args, **kwargs)
+                if validate_image(filename):
                     if func.__name__ == "convert_to":
                         kwargs["input_path"] = path
                         func(*args, **kwargs)
@@ -231,48 +227,44 @@ def combine_chunks(chunks, ignored_sound):
                 continue
             else:
                 combined += chunk
-        return combined
-    else:
-        return []
+    return combined
 
 def remove_silence_from_audio(*args, **kwargs):
     ignored_sound = AudioSegment.from_wav(kwargs["to_ignore"])
     sound = kwargs["input_path"]
     ext = kwargs["ext"]
+    silence_chunks = None
+    combined = None
+    min_silence_len = kwargs["min_silence_len"]
+    silence_thresh = kwargs["silence_thresh"]
+    keep_silence = kwargs["keep_silence"]
+
     if "nosilence" in sound:
         return "File already processed!"
     else:
         output = "{}_nosilence.{}".format(sound[:-4], ext)
+
     if type(sound) is str:
         sound = AudioSegment.from_wav(sound)
-        silence_chunks = split_on_silence(
-            sound,
-            min_silence_len=kwargs["min_silence_len"],
-            silence_thresh=kwargs["silence_thresh"],
-            keep_silence=kwargs["keep_silence"]
-        )
-        combined = combine_chunks(silence_chunks, ignored_sound)
-        if combined:
-            print(kwargs["input_path"])
-            if os.path.isfile(output):
-                return "File already exist"
-            else:
-                combined.export(output, format=ext)
-
+        silence_chunks = split_on_silence(sound,
+                                          min_silence_len=min_silence_len,
+                                          silence_thresh=silence_thresh,
+                                          keep_silence=keep_silence)
     elif type(sound) is AudioSegment:
-        silence_chunks = split_on_silence(
-            sound,
-            min_silence_len=kwargs["min_silence_len"],
-            silence_thresh=kwargs["silence_thresh"],
-            keep_silence=kwargs["keep_silence"]
-        )
+        silence_chunks = split_on_silence(sound,
+                                          min_silence_len=min_silence_len,
+                                          silence_thresh=silence_thresh,
+                                          keep_silence=keep_silence)
+
+    if len(silence_chunks) > 1:
         combined = combine_chunks(silence_chunks, ignored_sound)
-        if combined:
-            print(kwargs["input_path"])
-            if os.path.isfile(output):
-                return "File already exist"
-            else:
-                combined.export(output, format=ext)
+    if combined:
+        print(kwargs["input_path"])
+        if os.path.isfile(output):
+            return "File already exist"
+        else:
+            combined.export(output, format=ext)
+
 
 def combine_small_audio(main_dir):
     for klass in iter_dir(main_dir):
