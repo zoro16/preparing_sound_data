@@ -32,6 +32,18 @@ def iter_dir(folder):
                 folders.append(sub_folder_path)
     return folders
 
+
+def get_sorted_dir(main_dir):
+    full_list = {}
+    temp = []
+    for klass in iter_dir(main_dir):
+        for filename in os.listdir(klass):
+            p = os.path.join(klass, filename)
+            temp.append(p)
+        full_list[klass] = temp
+
+    return OrderedDict(sorted(full_list.items(), key=lambda t: t[0]))
+
 def dir_loop_decorate(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
@@ -389,16 +401,7 @@ if __name__ == "__main__":
 
     if args.to_spectrogram:
         if main_dir:
-            full_list = {}
-            temp = []
-            for klass in iter_dir(main_dir):
-                for filename in os.listdir(klass):
-                    p = os.path.join(klass, filename)
-                    temp.append(p)
-                full_list[klass] = temp
-
-            full_list = OrderedDict(sorted(full_list.items(), key=lambda t: t[0]))
-
+            full_list = get_sorted_dir(main_dir)
             for key, files_list in full_list.items():
                 files_list.sort()
                 for index, filename in enumerate(files_list):
@@ -476,15 +479,7 @@ if __name__ == "__main__":
 
     if args.list_files_with_silence:
         if main_dir:
-            full_list = {}
-            temp = []
-            for klass in iter_dir(main_dir):
-                for filename in os.listdir(klass):
-                    p = os.path.join(klass, filename)
-                    temp.append(p)
-                full_list[klass] = temp
-
-            full_list = OrderedDict(sorted(full_list.items(), key=lambda t: t[0]))
+            full_list = get_sorted_dir(main_dir)
             f = open("to_delete_list.tsv", "w")
             for key, files_list in full_list.items():
                 files_list.sort()
