@@ -71,6 +71,9 @@ def dir_loop_decorate(func):
                     if func.__name__ == "remove_silence_from_audio":
                         kwargs["input_path"] = path
                         func(*args, **kwargs)
+                    if func.__name__ == "delete_short_files":
+                        kwargs["input_path"] = path
+                        func(*args, **kwargs)
                 if validate_image(filename):
                     if func.__name__ == "convert_to":
                         kwargs["input_path"] = path
@@ -309,6 +312,12 @@ def delete_files(main_dir, fname, ext):
             except FileNotFoundError:
                 continue
 
+def delete_short_files(*args, **kwargs):
+    length = check_wave_lenght(kwargs["input_path"])
+    if length > 10 or length < 10:
+        print(kwargs["input_path"])
+
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -406,6 +415,11 @@ if __name__ == "__main__":
         "--delete_files",
         action="store_true",
         help="This will read from text or .tsv file and delete the actual files from main_dir.")
+    parser.add_argument(
+        "--delete_short_files",
+        action="store_true",
+        help="This will delete all the short files.")
+
 
 
     args = parser.parse_args()
@@ -514,3 +528,8 @@ if __name__ == "__main__":
     if args.delete_files:
         if main_dir:
             delete_files(main_dir, input_path, ext)
+
+    if args.delete_short_files:
+        if main_dir:
+            delete_short_files_all = dir_loop_decorate(delete_short_files)
+            delete_short_files_all(main_dir=main_dir)
