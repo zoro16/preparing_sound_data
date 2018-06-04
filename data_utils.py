@@ -304,7 +304,10 @@ def delete_files(main_dir, fname, ext):
         for k, i in zip(df["class"], df["file"]):
             path = "{}/{}/{}.{}".format(main_dir, k, i, ext)
             print(os.path.abspath(path))
-            os.remove(os.path.abspath(path))
+            try:
+                os.remove(os.path.abspath(path))
+            except FileNotFoundError:
+                continue
 
 
 if __name__ == "__main__":
