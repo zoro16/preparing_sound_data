@@ -298,6 +298,14 @@ def combine_small_audio(main_dir):
             all_sounds.export(output, format="wav")
 
 
+def delete_files(main_dir, fname, ext):
+    if fname.endswith("tsv"):
+        df = pd.read_table(fname, names=["class", "file"])
+        for k, i in zip(df["class"], df["file"]):
+            path = "{}/{}/{}.{}".format(main_dir, k, i, ext)
+            print(os.path.abspath(path))
+            os.remove(os.path.abspath(path))
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -391,6 +399,10 @@ if __name__ == "__main__":
         "--list_files_with_silence",
         action="store_true",
         help="This will check for the files that has been already processed and list them into text file.")
+    parser.add_argument(
+        "--delete_files",
+        action="store_true",
+        help="This will read from text or .tsv file and delete the actual files from main_dir.")
 
 
     args = parser.parse_args()
@@ -495,3 +507,7 @@ if __name__ == "__main__":
                         klass = key.split("/")
                         f.write("{}\t{}\t{}\t{}\n".format(klass[-1], name[:-4], old_lenght, new_lenght))
                         print("{}\t{}\t{}\t{}\n".format(klass[-1], name[:-4], old_lenght, new_lenght))
+
+    if args.delete_files:
+        if main_dir:
+            delete_files(main_dir, input_path, ext)
