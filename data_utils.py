@@ -313,10 +313,11 @@ def delete_files(main_dir, fname, ext):
                 continue
 
 def delete_short_files(*args, **kwargs):
-    length = check_wave_lenght(kwargs["input_path"])
+    fname = kwargs["input_path"]
+    length = check_wave_lenght(fname)
     if length > 10 or length < 10:
-        print(kwargs["input_path"])
-
+        print(fname)
+        os.remove(fname)
 
 
 if __name__ == "__main__":
