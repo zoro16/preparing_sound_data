@@ -4,7 +4,7 @@ import argparse
 from scipy.io import wavfile
 from pydub import AudioSegment
 from pydub.silence import split_on_silence
-from PIL import Image
+from PIL import Image, ImageChops
 import matplotlib
 import matplotlib.pyplot as plt
 matplotlib.use('Agg')
@@ -14,18 +14,6 @@ import pandas as pd
 from functools import wraps
 
 
-
-def validate_audio(fname):
-    if fname.endswith("wav") or fname.endswith("mp3"):
-        return True
-    else:
-        return False
-
-def validate_image(fname):
-    if fname.endswith("jpg") or fname.endswith("png"):
-        return True
-    else:
-        return False
 
 def iter_dir(folder):
     folders = []
@@ -38,46 +26,39 @@ def iter_dir(folder):
                 folders.append(sub_folder_path)
     return folders
 
-def get_sorted_dir(main_dir):
-    full_list = {}
-    temp = []
-    for klass in iter_dir(main_dir):
-        for filename in os.listdir(klass):
-            p = os.path.join(klass, filename)
-            temp.append(p)
-        full_list[klass] = temp
-
-    return OrderedDict(sorted(full_list.items(), key=lambda t: t[0]))
-
 def dir_loop_decorate(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
         klasses = iter_dir(kwargs["main_dir"])
+        klasses.sort()
         for klass in klasses:
-            for filename in os.listdir(klass):
-                if validate_audio(filename):
-                    path = os.path.join(klass, filename)
-                    if func.__name__ == "audio_to_chunks":
-                        kwargs["input_path"] = path
-                        kwargs["output_path"] = None
-                        func(*args, **kwargs)
-                    if func.__name__ == "mp3_to_wav":
-                        kwargs["input_path"] = path
-                        func(*args, **kwargs)
-                        full_list[klass] = temp
-                    if func.__name__ == "check_inf_amplitude":
-                        kwargs["input_path"] = path
-                        func(*args, **kwargs)
-                    if func.__name__ == "remove_silence_from_audio":
-                        kwargs["input_path"] = path
-                        func(*args, **kwargs)
-                    if func.__name__ == "delete_short_files":
-                        kwargs["input_path"] = path
-                        func(*args, **kwargs)
-                if validate_image(filename):
-                    if func.__name__ == "convert_to":
-                        kwargs["input_path"] = path
-                        func(*args, **kwargs)
+            files = os.listdir(klass)
+            files.sort()
+            for filename in files:
+                path = os.path.join(klass, filename)
+                if func.__name__ == "audio_to_chunks":
+                    kwargs["input_path"] = path
+                    kwargs["output_path"] = None
+                    func(*args, **kwargs)
+                if func.__name__ == "mp3_to_wav":
+                    kwargs["input_path"] = path
+                    func(*args, **kwargs)
+                    full_list[klass] = temp
+                if func.__name__ == "check_inf_amplitude":
+                    kwargs["input_path"] = path
+                    func(*args, **kwargs)
+                if func.__name__ == "remove_silence_from_audio":
+                    kwargs["input_path"] = path
+                    func(*args, **kwargs)
+                if func.__name__ == "delete_short_files":
+                    kwargs["input_path"] = path
+                    func(*args, **kwargs)
+                if func.__name__ == "convert_to":
+                    kwargs["input_path"] = path
+                    func(*args, **kwargs)
+                if func.__name__ == "png_to_jpg":
+                    kwargs["input_path"] = path
+                    func(*args, **kwargs)
     return wrapper
 
 def audio_to_chunks(*args, **kwargs):
@@ -89,13 +70,14 @@ def audio_to_chunks(*args, **kwargs):
         temp["output_path"] = kwargs["output_path"]
         temp["input_path"] = kwargs["input_path"]
 
-    audio = preprocess_audio(temp["input_path"])
-    name = os.path.basename(temp["input_path"])[:-4]
+    if temp["input_path"].endswith("wav"):
+        audio = preprocess_audio(temp["input_path"])
+        name = os.path.basename(temp["input_path"])[:-4]
 
-    # SPLIT SOUND IN 10-SECOND SLICES AND EXPORT
-    for i, chunk in enumerate(audio[::10000]):
-        with open("{}/{}_{:04d}.wav".format(temp["output_path"], name, i), "wb") as f:
-            chunk.export(f, format="wav")
+        # SPLIT SOUND IN 10-SECOND SLICES AND EXPORT
+        for i, chunk in enumerate(audio[::10000]):
+            with open("{}/{}_{:04d}.wav".format(temp["output_path"], name, i), "wb") as f:
+                chunk.export(f, format="wav")
 
 
 # PREPROCESS THE AUDIO TO THE CORRECT FORMAT
@@ -141,41 +123,47 @@ def graph_spectrogram(wav_file):
 
 def wav_to_png(*args, **kwargs):
     rate, data = get_wav_info(kwargs["input_path"])
+    fig,ax = plt.subplots(1)
+    fig.subplots_adjust(left=0,right=1,bottom=0,top=1)
+    ax.axis('off')
+
     nfft = 256 # LENGTH OF EACH WINDOW SEGMENT
     fs = 256 # SAMPLING FREQUENCIES
-    pxx, freqs, bins, im = plt.specgram(data, nfft, fs)
-    plt.axis('off')
-    save_spectrogram_as_png(plt, kwargs["input_path"])
+    pxx, freqs, bins, im = ax.specgram(data, nfft, fs)
 
-def save_spectrogram_as_png(plt, wav_filename):
-    # mpl.rcParams["savefig.directory"] = os.chdir(output_path)
-    png_filename = "{}.png".format(wav_filename[:-4])
-    
-    plt.savefig(png_filename,
-                frameon='false',
-                bbox_inches='tight',
-                pad_inches=0)
+    png_filename = "{}.png".format(kwargs["input_path"][:-4])
+    ax.axis('off')
+    fig.savefig(png_filename, dpi=100, frameon='false')
+
     plt.gcf().clear()
     plt.close()
-    # convert_to_jpg(png_filename)
+
+def trim(im):
+    bg = Image.new(im.mode, im.size, im.getpixel((0,0)))
+    diff = ImageChops.difference(im, bg)
+    diff = ImageChops.add(diff, diff, 2.0, -100)
+    bbox = diff.getbbox()
+    if bbox:
+        return im.crop(bbox)
 
 def convert_to(*args, **kwargs):
     filename = kwargs["input_path"]
-    ext= kwargs["ext"]
-    im = Image.open(filename)
-    rgb_im = im.convert('RGB')
-    rgb_im.save("{}.{}".format(filename[:-4], ext))
-    # if os.path.exists(filename):
-    #     os.remove(filename)
+    if filename.endswith("png"):
+        ext= kwargs["ext"]
+        im = Image.open(filename)
+        # im = trim(im)
+        rgb_im = im.convert('RGB')
+        rgb_im.save("{}.{}".format(filename[:-4], ext))
+        # if os.path.exists(filename):
+        #     os.remove(filename)
 
 # ImageMagick HAS TO BE INSTALLED
 def png_to_jpg(*args, **kwargs):
-    wd = os.getcwd()
-    path = os.path.join(wd, kwargs["main_dir"])
-    for klass in os.listdir(path):
-        c_klass = os.path.join(path, klass)
-        os.chdir(c_klass)
-        call(["mogrify", "-format", "jpg", "*.png"])
+    filename = kwargs["input_path"]
+    if filename.endswith("png"):
+        print(filename)
+        output = "{}.jpg".format(filename[:-4])
+        call(["convert", filename, output])
 
 # USED TO STANDARDIZE VOLUME OF AUDIO CLIP
 def match_target_amplitude(sound, target_dBFS):
@@ -314,10 +302,11 @@ def delete_files(main_dir, fname, ext):
 
 def delete_short_files(*args, **kwargs):
     fname = kwargs["input_path"]
-    length = check_wave_lenght(fname)
-    if length > 10 or length < 10:
-        print(fname)
-        os.remove(fname)
+    if fname.endswith("wav"):
+        length = check_wave_lenght(fname)
+        if length > 10 or length < 10:
+            print(fname)
+            os.remove(fname)
 
 
 if __name__ == "__main__":
@@ -435,21 +424,20 @@ if __name__ == "__main__":
 
     if args.to_spectrogram:
         if main_dir:
-            full_list = get_sorted_dir(main_dir)
-            for key, files_list in full_list.items():
-                files_list.sort()
-                for index, filename in enumerate(files_list):
-                    if files_list[index][:-4] == files_list[index-1][:-4]:
+            klasses = iter_dir(main_dir)
+            klasses.sort()
+            for klass in klasses:
+                files = os.listdir(klass)
+                files.sort()
+                for index, filename in enumerate(files):
+                    path = os.path.abspath(os.path.join(klass, filename))
+                    if files[index][:-4] == files[index-1][:-4]:
                         continue
                     else:
-                        if filename.endswith(".wav"):
-                            print(filename)
-                            wav_to_png(input_path=filename)
+                        if path.endswith(".wav"):
+                            print(path)
+                            wav_to_png(input_path=path)
 
-                    # TO CONVERT ONLY AUDIO FILES WITH NO SILENCE
-                    # if filename.endswith("nosilence.wav"):
-                    #        print(filename)
-                    #        wav_to_png(input_path=filename)
         else:
             wav_to_png(input_path=input_path)
         
@@ -463,7 +451,8 @@ if __name__ == "__main__":
     if args.png2jpg:
         if main_dir:
             if platform.system() == "Linux" or platform.system() == "Linux2":
-                png_to_jpg(main_dir)
+                png_to_jpg_all = dir_loop_decorate(png_to_jpg)
+                png_to_jpg_all(main_dir=main_dir)
             else:
                 convert_to_all = dir_loop_decorate(convert_to)
                 convert_to_all(main_dir=main_dir, ext="jpg")
