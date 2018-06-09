@@ -7,7 +7,7 @@ from pydub.silence import split_on_silence
 from PIL import Image, ImageChops
 import matplotlib
 import matplotlib.pyplot as plt
-matplotlib.use('Agg')
+#matplotlib.use('Agg')
 from collections import OrderedDict
 from subprocess import call
 import pandas as pd
@@ -70,14 +70,12 @@ def audio_to_chunks(*args, **kwargs):
         temp["output_path"] = kwargs["output_path"]
         temp["input_path"] = kwargs["input_path"]
 
-    if temp["input_path"].endswith("wav"):
-        audio = preprocess_audio(temp["input_path"])
-        name = os.path.basename(temp["input_path"])[:-4]
-
-        # SPLIT SOUND IN 10-SECOND SLICES AND EXPORT
-        for i, chunk in enumerate(audio[::10000]):
-            with open("{}/{}_{:04d}.wav".format(temp["output_path"], name, i), "wb") as f:
-                chunk.export(f, format="wav")
+    audio = preprocess_audio(temp["input_path"])
+    name = os.path.basename(temp["input_path"])[:-4]
+    # SPLIT SOUND IN 10-SECOND SLICES AND EXPORT
+    for i, chunk in enumerate(audio[::10000]):
+        with open("{}/{}_{:04d}.wav".format(temp["output_path"], name, i), "wb") as f:
+            chunk.export(f, format="wav")
 
 
 # PREPROCESS THE AUDIO TO THE CORRECT FORMAT
@@ -446,7 +444,7 @@ if __name__ == "__main__":
             audio_to_chunks_for_all = dir_loop_decorate(audio_to_chunks)
             audio_to_chunks_for_all(main_dir=main_dir, output_path=output_path)
         else:
-            audio_to_chunks(input_path, output_path)
+            audio_to_chunks(input_path=input_path, output_path=output_path)
 
     if args.png2jpg:
         if main_dir:
