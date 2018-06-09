@@ -59,6 +59,9 @@ def dir_loop_decorate(func):
                 if func.__name__ == "png_to_jpg":
                     kwargs["input_path"] = path
                     func(*args, **kwargs)
+                if func.__name__ == "m4a_to_wav":
+                    kwargs["input_path"] = path
+                    func(*args, **kwargs)
     return wrapper
 
 def audio_to_chunks(*args, **kwargs):
@@ -76,7 +79,6 @@ def audio_to_chunks(*args, **kwargs):
     for i, chunk in enumerate(audio[::10000]):
         with open("{}/{}_{:04d}.wav".format(temp["output_path"], name, i), "wb") as f:
             chunk.export(f, format="wav")
-
 
 # PREPROCESS THE AUDIO TO THE CORRECT FORMAT
 def preprocess_audio(filename):
@@ -178,7 +180,6 @@ def check_inf_amplitude(*args, **kwargs):
             print(filename)
             f.write(filename)
 
-
 def remove_silent_files(path, ext):
     df = None
     try:
@@ -266,7 +267,6 @@ def remove_silence_from_audio(*args, **kwargs):
             else:
                 combined.export(output, format=ext)
 
-
 def combine_small_audio(main_dir):
     for klass in iter_dir(main_dir):
         all_sounds = None
@@ -285,7 +285,6 @@ def combine_small_audio(main_dir):
             output = "all_{}.wav".format(os.path.basename(klass))
             output = os.path.join(klass, output)
             all_sounds.export(output, format="wav")
-
 
 def delete_files(main_dir, fname, ext):
     if fname.endswith("tsv"):
@@ -306,6 +305,13 @@ def delete_short_files(*args, **kwargs):
             print(fname)
             os.remove(fname)
 
+# avconv has to be installed
+def m4a_to_wav(*args, **kwargs):
+    filename = kwargs["input_path"]
+    if filename.endswith("m4a"):
+        print(filename)
+        output = "{}.wav".format(filename[:-4])
+        call(["avconv", "-i", filename, "-ar", "16000", "-ac", "1", output])
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -368,6 +374,10 @@ if __name__ == "__main__":
         action="store_true",
         help="Set this to convert *.mp3 audio files to *.wav, you need to install"\
         " ffmpeg in you *inux machine")
+    parser.add_argument(
+        "--m4a_to_wav",
+        action="store_true",
+        help="To convert from *.m4a to wav (`avconv` has to be installed in the machine).")
     parser.add_argument(
         "--check_inf",
         action="store_true",
@@ -521,3 +531,10 @@ if __name__ == "__main__":
         if main_dir:
             delete_short_files_all = dir_loop_decorate(delete_short_files)
             delete_short_files_all(main_dir=main_dir)
+
+    if args.m4a_to_wav:
+        if main_dir:
+            m4a_to_wav_for_all = dir_loop_decorate(m4a_to_wav)
+            m4a_to_wav_for_all(main_dir=main_dir)
+        else:
+            m4a_to_wav(input_path=input_path)
