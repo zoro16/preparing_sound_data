@@ -64,6 +64,9 @@ def dir_loop_decorate(func):
                     func(*args, **kwargs)
     return wrapper
 
+def to_millisecond(x):
+    return x*1000
+
 def audio_to_chunks(*args, **kwargs):
     temp = {"output_path": None, "input_path": None}
     if not kwargs["output_path"]:
@@ -73,12 +76,21 @@ def audio_to_chunks(*args, **kwargs):
         temp["output_path"] = kwargs["output_path"]
         temp["input_path"] = kwargs["input_path"]
 
-    audio = preprocess_audio(temp["input_path"])
-    name = os.path.basename(temp["input_path"])[:-4]
-    # SPLIT SOUND IN 10-SECOND SLICES AND EXPORT
-    for i, chunk in enumerate(audio[::10000]):
-        with open("{}/{}_{:04d}.wav".format(temp["output_path"], name, i), "wb") as f:
-            chunk.export(f, format="wav")
+    max_duration = kwargs["max_duration"]
+    max_duration = to_millisecond(max_duration)
+
+    if temp["input_path"].endswith("wav"):
+        audio = preprocess_audio(temp["input_path"])
+        name = os.path.basename(temp["input_path"])[:-4]
+        # SPLIT SOUND INTO 10-SECOND (DEFAULT) SLICES AND EXPORT
+        if len(audio) > max_duration:
+            for i, chunk in enumerate(audio[::max_duration]):
+                new_file = "{}/{}_{:04d}.wav".format(temp["output_path"], name, i)
+                with open(new_file, "wb") as f:
+                    print(new_file)
+                    chunk.export(f, format="wav")
+            # os.remove(temp["input_path"])
+
 
 # PREPROCESS THE AUDIO TO THE CORRECT FORMAT
 def preprocess_audio(filename):
@@ -313,37 +325,52 @@ def m4a_to_wav(*args, **kwargs):
         output = "{}.wav".format(filename[:-4])
         call(["avconv", "-i", filename, "-ar", "16000", "-ac", "1", output])
 
+
+
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(description="This some tools to prepare audio dataset before training.")
     parser.add_argument(
         "-p",
         "--main_dir",
+        dest="main_dir",
         help="This flag to specify the main audio files directory path"\
         " e.g `/mountdir/data/civilization/`")
     parser.add_argument(
         "-i",
         "--input_path",
+        dest="input_path",
         help="Set this flag to specfiy the input path")
     parser.add_argument(
         "-o",
         "--output_path",
+        dest="output_path",
         help="Set this flag to specfiy the output path")
     parser.add_argument(
+        "--max_duration",
+        dest="max_duration",
+        type=int,
+        default=10,
+        help="This to specify the desired duration of big audio file to be sliced to and it's in seconds `s`")
+    parser.add_argument(
         "--min_silence_len",
+        dest="min_silence_len",
         type=int,
         default=50,
         help="Set this for `remove_silence_from_audio` command to set a differen "\
         "minimum silece length (in ms)")
     parser.add_argument(
         "--to_ignore",
+        dest="to_ignore",
         help="Set this for `remove_silence_from_audio` command to specify which sound to ignore")
     parser.add_argument(
         "--silence_thresh",
+        dest="silence_thresh",
         type=int,
         default=-65,
         help="Set this for `remove_silence_from_audio` command to set silence thresh (in dBFS)")
     parser.add_argument(
         "--keep_silence",
+        dest="keep_silence",
         type=int,
         default=50,
         help="Set this for `remove_silence_from_audio` command to set the amount of "\
@@ -351,73 +378,86 @@ if __name__ == "__main__":
     parser.add_argument(
         "-e",
         "--extension",
+        dest="extension",
         default="wav",
         help="Set this to specfiy the file extension that you want to process on.")
     parser.add_argument(
         "-s",
         "--slice_audio",
+        dest="slice_audio",
         action="store_true",
         help="Set this flag if you want to slice the *.wav file into"
         "chunks of 10sec audio files")
     parser.add_argument(
         "-S",
         "--to_spectrogram",
+        dest="to_spectrogram",
         action="store_true",
         help="Set this flag  to create spectrograms images from *.wav files")
     parser.add_argument(
         "--png2jpg",
+        dest="png2jpg",
         action="store_true",
         help="Set this to convert *.png images to *.jpg, you need to install"\
         " imagmagick in you *inux machine")
     parser.add_argument(
         "--mp32wav",
+        dest="mp32wav",
         action="store_true",
         help="Set this to convert *.mp3 audio files to *.wav, you need to install"\
         " ffmpeg in you *inux machine")
     parser.add_argument(
         "--m4a_to_wav",
+        dest="m4a_to_wav",
         action="store_true",
         help="To convert from *.m4a to wav (`avconv` has to be installed in the machine).")
     parser.add_argument(
         "--check_inf",
+        dest="check_inf",
         action="store_true",
         help="Set this to check if audio files are silence")
     parser.add_argument(
         "-rsf",
         "--remove_silent",
+        dest="remove_silent",
         action="store_true",
         help="Set this to specfiy the file extension that you want to process on.")
     parser.add_argument(
         "-rsa",
         "--remove_silence_from_audio",
+        dest="remove_silence_from_audio",
         action="store_true",
         help="Set this to remove silence from wave file then combine the chunks"\
         " with no silece in them.")
     parser.add_argument(
         "-g",
         "--generate_label",
+        dest="generate_label",
         action="store_true",
         help="Set this to generate labeled data from existing.")
     parser.add_argument(
         "-c",
         "--combine_small_audio",
+        dest="combine_small_audio",
         action="store_true",
         help="Set this to combine all the small audio files in one class"\
         " to one audio file.")
     parser.add_argument(
         "-l",
         "--list_files_with_silence",
+        dest="list_files_with_silence",
         action="store_true",
         help="This will check for the files that has been already processed and list them into text file.")
     parser.add_argument(
         "--delete_files",
+        dest="delete_files",
         action="store_true",
         help="This will read from text or .tsv file and delete the actual files from main_dir.")
     parser.add_argument(
         "--delete_short_files",
+        dest="delete_short_files",
         action="store_true",
         help="This will delete all the short files.")
-
 
 
     args = parser.parse_args()
@@ -429,6 +469,7 @@ if __name__ == "__main__":
     silence_thresh = args.silence_thresh
     keep_silence = args.keep_silence
     to_ignore = args.to_ignore
+    max_duration = args.max_duration
 
     if args.to_spectrogram:
         if main_dir:
@@ -452,9 +493,13 @@ if __name__ == "__main__":
     if args.slice_audio:
         if main_dir:
             audio_to_chunks_for_all = dir_loop_decorate(audio_to_chunks)
-            audio_to_chunks_for_all(main_dir=main_dir, output_path=output_path)
+            audio_to_chunks_for_all(main_dir=main_dir,
+                                    output_path=output_path,
+                                    max_duration=max_duration)
         else:
-            audio_to_chunks(input_path=input_path, output_path=output_path)
+            audio_to_chunks(input_path=input_path,
+                            output_path=output_path,
+                            max_duration=max_duration)
 
     if args.png2jpg:
         if main_dir:
